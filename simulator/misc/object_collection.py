@@ -10,12 +10,15 @@ class ObjectCollection:
 
 
     @classmethod
-    def find_by(cls, attribute_name, desired_attribute_value):
+    def find_by(cls, attribute_name, attribute_value):
         """ Finds class objects based on any object attribute (user must inform the attribute name).
         """
 
+        if attribute_name == 'id':
+            attribute_value = int(attribute_value)
+
         return([classInstance for classInstance in cls.instances
-        	if getattr(classInstance, attribute_name) == desired_attribute_value])
+               if getattr(classInstance, attribute_name) == attribute_value])
 
 
     @classmethod

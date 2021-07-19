@@ -21,7 +21,7 @@ class Topology(ObjectCollection, nx.Graph):
         Topology.instances.append(self)
 
 
-    def draw(self, showgui=True, savefig=True):
+    def draw(self, showgui=True, savefig=True, figname='topology.png'):
         """ Draws the network topology.
         """
 
@@ -38,18 +38,17 @@ class Topology(ObjectCollection, nx.Graph):
             labels[sensor] = sensor.id
 
             if sensor.type == 'physical':
-                colors.append((0, 0, 0, 1))
-            else:
-                colors.append((0, 0, 0, 1))
-
-        # plt.gca().invert_yaxis()
-        # plt.gca().invert_xaxis()
+                colors.append('black')
+            elif sensor.type == 'logical':
+                colors.append('red')
+            elif sensor.type == 'auxiliary':
+                colors.append('green')
 
         nx.draw(self, pos=pos, labels=labels, node_size=60, font_size=4,
                 font_color='white', node_color=colors, font_weight='bold')
 
         if savefig:
-            fig.savefig('topology.png', dpi=200)
+            fig.savefig(figname, dpi=200)
 
         if showgui:
             plt.show()

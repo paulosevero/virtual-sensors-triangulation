@@ -1,3 +1,5 @@
+import scipy.interpolate
+
 from simulator.misc.object_collection import ObjectCollection
 
 
@@ -51,3 +53,43 @@ class Sensor(ObjectCollection):
 
         return(f'Sensor_{self.id}. Type: {self.type}. Alias: {self.alias}. ' +
                f'Coordinates: {self.coordinates}. Value: {self.measurement}')
+
+
+    def get_encoded_position(self):
+        """ Encodes sensor's coordinates into a single number [1].
+
+        Returns
+        =======
+        pos : int
+            Encoded sensor coordinates
+
+        [1] https://stackoverflow.com/questions/4637031/geospatial-indexing-with-redis-sinatra-for-a-facebook-app
+        """
+
+        pos = (self.coordinates[0]+90)*180+self.coordinates[1]
+        return(pos)
+
+
+    def interpolate_measurement(self, sensor1, sensor2):
+        """ Infers the measurement of a sensor based on
+        the measurements of two other inlined sensors.
+
+        Parameters
+        ==========
+        sensor1 : Sensor
+            Sensor that forms a line with sensor2 and is used to infer the measurement
+        sensor2 : Sensor
+            Sensor that forms a line with sensor1 and is used to infer the measurement
+
+        Returns
+        =======
+        inferred_measurement : float
+            Inferred sensor measurement
+        """
+        positions = [sensor1.get_encoded_position(), sensor2.get_encoded_position()]
+        measurements = [sensor1.measurement, sensor2.measurement]
+
+        interpolation = scipy.interpolate.interp1d(positions, measurements)
+
+        inferred_measurement = interpolation(self.get_encoded_position())
+        return(inferred_measurement)
