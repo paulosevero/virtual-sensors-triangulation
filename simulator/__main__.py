@@ -8,7 +8,7 @@ import argparse
 from simulator.simulator import Simulator
 
 
-def main(dataset, steps, algorithm, output):
+def main(dataset, steps, sensor_id, algorithm, output):
     """ Executes the simulation.
 
     Parameters
@@ -24,22 +24,24 @@ def main(dataset, steps, algorithm, output):
     """
 
     Simulator.load_dataset(target=dataset)
-    Simulator.run(steps=steps, algorithm=algorithm)
+    Simulator.run(steps=steps, algorithm=algorithm, sensor_id=sensor_id)
     Simulator.show_output(output_file=output)
 
 
 if __name__ == '__main__':
     # Defining a seed value to enable reproducibility in case any stochastic behavior occurs during simulation
-    random.seed(1)
+    random.seed(4)
 
     # Parsing named arguments from the command line
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--dataset', '-d', help='Dataset file or directory containing list of dataset files')
     parser.add_argument('--simulation-steps', '-s', help='Number of simulation steps')
+    parser.add_argument('--target-sensor', '-t', help='Target sensor ID')
     parser.add_argument('--algorithm', '-a', help='Heuristic algorithm to be executed')
     parser.add_argument('--output', '-o', help='Output file name', default='topology.png')
     args = parser.parse_args()
 
     # Calling the main method
-    main(dataset=args.dataset, steps=args.simulation_steps, algorithm=args.algorithm, output=args.output)
+    main(dataset=args.dataset, steps=args.simulation_steps, sensor_id=int(args.target_sensor),
+         algorithm=args.algorithm, output=args.output)

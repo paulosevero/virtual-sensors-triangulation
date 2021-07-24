@@ -79,3 +79,24 @@ def triangle_area(x1, y1, x2, y2, x3, y3):
 
     area = abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0)
     return(area)
+
+
+def matrix_determinant(coord1, coord2, coord3):
+    """
+    """
+
+    matrix = [[coord1[0], coord1[1], 1], [coord2[0], coord2[1], 1], [coord3[0], coord3[1], 1]]
+
+    a = matrix[0][0] * matrix[1][1] * matrix[2][2]
+    b = matrix[0][1] * matrix[1][2] * matrix[2][0]
+    c = matrix[0][2] * matrix[1][0] * matrix[2][1]
+    d1 = a + b + c
+
+    d = matrix[0][2] * matrix[1][1] * matrix[2][0]
+    e = matrix[0][0] * matrix[1][2] * matrix[2][1]
+    f = matrix[0][1] * matrix[1][0] * matrix[2][2]
+    d2 = d + e + f
+
+    determinant = d1 - d2
+
+    return(determinant)

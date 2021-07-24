@@ -119,7 +119,7 @@ class Simulator:
 
 
     @classmethod
-    def run(cls, steps, algorithm):
+    def run(cls, steps, algorithm, sensor_id):
         """ Starts the simulation.
 
         Parameters
@@ -129,6 +129,9 @@ class Simulator:
 
         algorithm : string
             Heuristic algorithm that will be executed
+
+        sensor_id : int
+            Target sensor whose measurement will be inferred
         """
 
         # Creating a simulation environment
@@ -138,7 +141,7 @@ class Simulator:
         Simulator.environment.heuristic = algorithm
 
         # Starting the simulation
-        Simulator.environment.run(heuristic=Simulator.heuristic(algorithm=algorithm))
+        Simulator.environment.run(sensor_id=sensor_id, heuristic=Simulator.heuristic(algorithm=algorithm))
 
 
     @classmethod
@@ -176,3 +179,5 @@ class Simulator:
         print('\n\n=== SIMULATION RESULTS ===')
         for step_metrics in Simulator.environment.metrics:
             print(step_metrics)
+
+        Topology.first().draw(showgui=True, savefig=True)

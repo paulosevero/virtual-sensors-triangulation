@@ -49,14 +49,14 @@ class SimulationEnvironment(ObjectCollection):
         SimulationEnvironment.instances.append(self)
 
 
-    def run(self, heuristic):
+    def run(self, sensor_id, heuristic):
         """ Triggers the set of events that ocurr during the simulation.
         """
 
         # The simulation goes on while the stopping criteria is not met
         while self.current_step <= self.steps:
             # Running a set of user-defined tasks
-            heuristic()
+            heuristic(sensor_id=sensor_id)
 
             # Collecting simulation metrics for the current step and moving to the next step
             self.collect_metrics()

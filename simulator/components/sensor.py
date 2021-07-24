@@ -68,7 +68,7 @@ class Sensor(ObjectCollection):
 
 
     @classmethod
-    def create_delaunay_triangles(physical_sensors):
+    def create_delaunay_triangles(cls, physical_sensors):
         """ Creates a mesh of triangles using the delaunay algorithm.
 
         Parameters
@@ -94,6 +94,23 @@ class Sensor(ObjectCollection):
                 topo.add_edge(triangle[i], triangle[i+1])
 
         return(triangles)
+
+
+    def covered_by_triangles_mesh(self, sensors):
+        """
+        """
+
+        if len(sensors) > 2:
+            triangles = Sensor.create_delaunay_triangles(sensors)
+
+            for triangle in triangles:
+                if self.is_inside_triangle(triangle=triangle):
+                    print(f'Sensor_{self.id} is inside triangle {[sensor.id for sensor in triangle]}')
+                    return(True)
+                else:
+                    print(f'Sensor_{self.id} is NOT inside triangle {[sensor.id for sensor in triangle]}')
+
+        return(False)
 
 
     def find_neighbors_sorted_by_distance(self):
@@ -196,6 +213,32 @@ class Sensor(ObjectCollection):
         inferred_measurement = (value_aux_sensor1 + value_aux_sensor2 + value_aux_sensor3) / 3
 
         return(inferred_measurement)
+
+
+    def is_inside_line(self, sensor1, sensor2):
+        """ Checks if sensor is inside a line.
+
+        Parameters
+        ==========
+        sensor1 : Sensor
+            First sensor that forms the line
+
+        sensor2 : Sensor
+            Second sensor that forms the line
+        """
+
+        encoded_position1 = sensor1.get_encoded_position()
+        encoded_position2 = self.get_encoded_position()
+        encoded_position3 = sensor2.get_encoded_position()
+
+        print(f'encoded_position1 = {encoded_position1}')
+        print(f'encoded_position2 = {encoded_position2}')
+        print(f'encoded_position3 = {encoded_position3}')
+
+        exit(1)
+
+        return((encoded_position2 > encoded_position1 and encoded_position2 < encoded_position3) or
+               (encoded_position2 < encoded_position1 and encoded_position2 > encoded_position3))
 
 
     def is_inside_triangle(self, triangle):
