@@ -1,12 +1,12 @@
-# Python Libraries
-# import simpy
-
 # General-Purpose Components
 from simulator.misc.object_collection import ObjectCollection
 
+# Helper Methods
+from simulator.misc.helper_methods import inference_accuracy
+
 # Simulator Components
-# from simulator.components.topology import Topology
-# from simulator.components.sensor import Sensor
+from simulator.components.sensor import Sensor
+from simulator.components.topology import Topology
 
 
 class SimulationEnvironment(ObjectCollection):
@@ -55,18 +55,57 @@ class SimulationEnvironment(ObjectCollection):
 
         # The simulation goes on while the stopping criteria is not met
         while self.current_step <= self.steps:
+            # Updating system state
+            self.update_system_state()
+
             # Running a set of user-defined tasks
             heuristic(sensor_id=sensor_id)
+
+            # Removing temporary items in the topology
+            self.clean_environment()
 
             # Collecting simulation metrics for the current step and moving to the next step
             self.collect_metrics()
             self.current_step += 1
 
 
+    def update_system_state(self):
+        """
+        """
+
+        # Updating sensors measurements and their timestamps
+        for sensor in [sensor for sensor in Sensor.all() if sensor.type == 'physical' or sensor.type == 'logical']:
+            sensor.measurement = sensor.measurements[self.current_step - 1]
+            sensor.timestamp = sensor.timestamps[self.current_step - 1]
+
+
+    def clean_environment(self):
+        """
+        """
+
+        # Removing auxiliary sensors and any links used to triangulate measurements of a logical sensor
+        Topology.first().remove_edges_from(list(Topology.first().edges()))
+
+        auxiliary_sensors = [sensor for sensor in Sensor.all() if sensor.type == 'auxiliary']
+        Topology.first().remove_nodes_from(auxiliary_sensors)
+
+
     def collect_metrics(self):
         """ Stores relevant events that occur during the simulation.
         """
 
-        step_metrics = {'step': self.current_step, 'awesome_metric': 1}
+        measurements = []
+
+        for sensor in Sensor.all():
+
+            if sensor.inferred_measurement is not None:
+
+                accuracy = inference_accuracy(expected=sensor.measurement, inferred=sensor.inferred_measurement)
+
+                measurements.append({'sensor': sensor.id, 'timestamp': sensor.timestamp,
+                                     'real_measurement': sensor.measurement, 'inference': sensor.inferred_measurement,
+                                     'accuracy': accuracy})
+
+        step_metrics = {'step': self.current_step, 'measurements': measurements}
 
         self.metrics.append(step_metrics)

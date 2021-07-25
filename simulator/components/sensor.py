@@ -2,6 +2,7 @@
 import scipy.interpolate
 from scipy.spatial import distance
 from scipy.spatial import Delaunay
+import itertools
 
 # General-purpose Simulator Modules
 from simulator.misc.object_collection import ObjectCollection
@@ -10,6 +11,7 @@ from simulator.misc.object_collection import ObjectCollection
 from simulator.components.topology import Topology
 
 # Helper Methods
+from simulator.misc.helper_methods import matrix_determinant
 from simulator.misc.helper_methods import triangle_area
 from simulator.misc.helper_methods import line
 from simulator.misc.helper_methods import intersection
@@ -20,7 +22,7 @@ class Sensor(ObjectCollection):
     # Class attribute that allows the class to use ObjectCollection methods
     instances = []
 
-    def __init__(self, coordinates, type='physical', timestamp=None, measurement=None, metric='', alias=''):
+    def __init__(self, coordinates=None, type='physical', timestamps=[], measurements=[], alias=''):
         """ Creates a new sensor.
 
         Parameters
@@ -34,11 +36,8 @@ class Sensor(ObjectCollection):
         timestamp : datetime (optional)
             Timestamp for the sensor measurement
 
-        measurement : float (optional)
-            Sensor measurement
-
-        metric : string (optional)
-            Metric collected by the sensor
+        measurements : float (optional)
+            Sensor measurements
 
         alias : string (optional)
             Name that identifies the sensor
@@ -46,13 +45,24 @@ class Sensor(ObjectCollection):
 
         # Defining sensor attributes
         self.id = Sensor.count() + 1
-        self.type = type
-        self.coordinates = coordinates
-        self.timestamp = timestamp
-        self.measurement = measurement
-        self.metric = metric
-        self.alias = alias
 
+        # Helper attribute that differs physical sensors from the virtual and auxiliary ones
+        self.type = type
+
+        # Basic sensor attributes
+        self.alias = alias
+        self.coordinates = coordinates
+        self.measurements = measurements
+        self.timestamps = timestamps
+
+        # Sensor measurement at the current timestamp
+        self.measurement = measurements[0] if len(measurements) > 0 else None
+        self.timestamp = timestamps[0] if len(timestamps) > 0 else None
+
+        # Inferred measurement
+        self.inferred_measurement = None
+
+        # NetworkX topology
         self.topology = None
 
         # Adding the new object to the list of instances of its class
@@ -64,7 +74,7 @@ class Sensor(ObjectCollection):
         """
 
         return(f'Sensor_{self.id}. Type: {self.type}. Alias: {self.alias}. ' +
-               f'Coordinates: {self.coordinates}. Value: {self.measurement}')
+               f'Coordinates: {self.coordinates}. Value: {self.measurements}')
 
 
     @classmethod
@@ -121,7 +131,7 @@ class Sensor(ObjectCollection):
         neighbors : list
             List of sensors sorted by their distance from 'self'
         """
-        sensors = [sensor for sensor in Sensor.all() if sensor != self]
+        sensors = [sensor for sensor in Sensor.all() if sensor != self and sensor.type == 'physical']
         neighbors = sorted(sensors, key=lambda s: distance.euclidean(self.coordinates, s.coordinates))
 
         return(neighbors)
@@ -231,14 +241,37 @@ class Sensor(ObjectCollection):
         encoded_position2 = self.get_encoded_position()
         encoded_position3 = sensor2.get_encoded_position()
 
-        print(f'encoded_position1 = {encoded_position1}')
-        print(f'encoded_position2 = {encoded_position2}')
-        print(f'encoded_position3 = {encoded_position3}')
-
-        exit(1)
-
         return((encoded_position2 > encoded_position1 and encoded_position2 < encoded_position3) or
                (encoded_position2 < encoded_position1 and encoded_position2 > encoded_position3))
+
+
+    def crossed_by_line(self, sensors):
+        """ Checks if sensor is crossed by a line formed by two physical sensors.
+
+        Parameters
+        ==========
+        sensors : list
+            List of physical sensors
+
+        Returns
+        =======
+        Tuple of sensors of 'False'
+            Indication of whether a sensor is crossed by two physical sensors or not
+        """
+
+        combinations = itertools.combinations(sensors, 2)
+        for pair in combinations:
+
+            # Calculating the matrix determinant to check if the virtual sensor is aligned with two physical sensors
+            determinant = matrix_determinant(coord1=pair[0].coordinates, coord2=self.coordinates, coord3=pair[1].coordinates)
+
+            # Checking if the sensor is inside the line formed by the two physical sensors
+            inside_line = self.is_inside_line(sensor1=pair[0], sensor2=pair[1])
+
+            if determinant == 0 and inside_line:
+                return(pair)
+
+        return(False)
 
 
     def is_inside_triangle(self, triangle):
@@ -278,5 +311,38 @@ class Sensor(ObjectCollection):
         # float values to 'triangle_coordinates_precision' decimal places
         if(round(A, triangle_coordinates_precision) == round(A1 + A2 + A3, triangle_coordinates_precision)):
             return(True)
+        else:
+            return(False)
+
+
+    def can_be_triangulated(self, sensors):
+        """ Creates a mesh of triangles using the Delaunay algorithm and checks if triangle (self)
+        is covered by any of thee created triangles in such a way its value could be triangulated.
+
+        Parameters
+        ==========
+        sensors : list
+            List of physical sensors
+
+        Returns
+        =======
+        List or 'False'
+            Indication of whether a sensor measurement could be triangulated base on a mesh of triangles or not
+        """
+
+        triangles_that_cover_the_sensor = []
+
+        if len(sensors) >= 3:
+
+            # Creates a mesh of triangles using the Delaunay algorithm
+            triangles = Sensor.create_delaunay_triangles(physical_sensors=sensors)
+
+            for triangle in triangles:
+                if self.is_inside_triangle(triangle=triangle):
+                    triangles_that_cover_the_sensor.append(triangle)
+
+            if len(triangles_that_cover_the_sensor) > 0:
+                return(triangles_that_cover_the_sensor)
+
         else:
             return(False)

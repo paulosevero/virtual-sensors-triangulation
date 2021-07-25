@@ -8,7 +8,7 @@ import argparse
 from simulator.simulator import Simulator
 
 
-def main(dataset, steps, sensor_id, algorithm, output):
+def main(dataset, steps, sensor_id, algorithm, metric, output):
     """ Executes the simulation.
 
     Parameters
@@ -23,7 +23,7 @@ def main(dataset, steps, sensor_id, algorithm, output):
         Output file (image with topology)
     """
 
-    Simulator.load_dataset(target=dataset)
+    Simulator.load_dataset(target=dataset, metric=metric)
     Simulator.run(steps=steps, algorithm=algorithm, sensor_id=sensor_id)
     Simulator.show_output(output_file=output)
 
@@ -37,6 +37,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--dataset', '-d', help='Dataset file or directory containing list of dataset files')
     parser.add_argument('--simulation-steps', '-s', help='Number of simulation steps')
+    parser.add_argument('--metric', '-m', help='Metric to be inferred')
     parser.add_argument('--target-sensor', '-t', help='Target sensor ID')
     parser.add_argument('--algorithm', '-a', help='Heuristic algorithm to be executed')
     parser.add_argument('--output', '-o', help='Output file name', default='topology.png')
@@ -44,4 +45,4 @@ if __name__ == '__main__':
 
     # Calling the main method
     main(dataset=args.dataset, steps=args.simulation_steps, sensor_id=int(args.target_sensor),
-         algorithm=args.algorithm, output=args.output)
+         algorithm=args.algorithm, metric=args.metric, output=args.output)

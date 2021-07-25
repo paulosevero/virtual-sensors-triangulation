@@ -100,3 +100,33 @@ def matrix_determinant(coord1, coord2, coord3):
     determinant = d1 - d2
 
     return(determinant)
+
+
+def inference_accuracy(inferred, expected):
+    """
+    """
+
+    dist = abs(inferred - expected)
+
+    precision = 100 - (dist * 100 / expected)
+
+    return(precision)
+
+
+def triangle_centroid(triangle):
+    """
+    """
+
+    x1 = triangle[0].coordinates[0]
+    y1 = triangle[0].coordinates[1]
+
+    x2 = triangle[1].coordinates[0]
+    y2 = triangle[1].coordinates[1]
+
+    x3 = triangle[2].coordinates[0]
+    y3 = triangle[2].coordinates[1]
+
+    centroid_x = round((x1 + x2 + x3) / 3, 2)
+    centroid_y = round((y1 + y2 + y3) / 3, 2)
+
+    return((centroid_x, centroid_y))

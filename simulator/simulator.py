@@ -1,8 +1,13 @@
 # Python Libraries
 import os
 import csv
+import numpy as np
+import pandas as pd
 import re
 from datetime import datetime
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 # General-purpose Simulator Modules
 from simulator.simulation_environment import SimulationEnvironment
@@ -13,6 +18,8 @@ from simulator.components.topology import Topology
 
 # Heuristic Algorithms
 from simulator.heuristics.proposed_heuristic import proposed_heuristic
+from simulator.heuristics.knn import knn
+from simulator.heuristics.idw import idw
 
 
 class Simulator:
@@ -24,7 +31,7 @@ class Simulator:
     dataset = None
 
     @classmethod
-    def load_dataset(cls, target, formatting='INMET-BR'):
+    def load_dataset(cls, target, metric, formatting='INMET-BR'):
         """ Loads data from input files and creates a topology with sensor objects.
 
         target : string
@@ -56,17 +63,18 @@ class Simulator:
                 print(f'JSON input file: {target}')
 
             else:
-                dataset = Simulator.parse_dataset_inmet_br(target=target)
+                dataset = Simulator.parse_dataset_inmet_br(target=target, metric=metric)
 
             # Adding sensors to the NetworkX topology
-            for sensor in dataset:
-                sensor = Sensor(coordinates=sensor['coordinates'], timestamp=sensor['timestamp'], type='physical',
-                                measurement=sensor['measurement'], metric=sensor['metric'], alias=sensor['alias'])
+            for data in dataset:
+                sensor = Sensor(coordinates=data['coordinates'], type='physical', timestamps=data['timestamps'],
+                                measurements=data['measurements'], alias=data['alias'])
+
                 topo.add_node(sensor)
 
 
     @classmethod
-    def parse_dataset_inmet_br(cls, target):
+    def parse_dataset_inmet_br(cls, target, metric):
         """ Parse data following the format adopted by the
         Brazilian National Institute of Meteorology (INMET).
 
@@ -92,26 +100,31 @@ class Simulator:
             with open(f'data/{target}/{file}', newline='', encoding='ISO-8859-1') as csvfile:
                 content = list(csv.reader(csvfile, delimiter=';', quotechar='|'))
 
-                if len(content[4][1]) > 0:
-                    latitude = float(re.sub(',', '.', content[4][1]))
-                else:
-                    latitude = None
-
-                if len(content[5][1]) > 0:
-                    longitude = float(re.sub(',', '.', content[5][1]))
-                else:
-                    longitude = None
-
-                if len(content[9][9]) > 0:
-                    sensor['measurement'] = float(re.sub(',', '.', content[9][9]))
-                else:
-                    sensor['measurement'] = None
-
-                sensor['alias'] = content[2][1]
+                # Parsing basic attributes
+                latitude = float(re.sub(',', '.', content[4][1])) if len(content[4][1]) > 0 else None
+                longitude = float(re.sub(',', '.', content[5][1])) if len(content[5][1]) > 0 else None
                 sensor['coordinates'] = (latitude, longitude)
-                timestamp = f'{content[9][0]}@{content[9][1][0:4]}'
-                sensor['timestamp'] = datetime.strptime(timestamp, '%Y/%m/%d@%H%M')
-                sensor['metric'] = content[8][9]
+                sensor['alias'] = content[2][1]
+
+                # Converting part of the CSV with data measurements to a pandas dataframe to ease manipulation. Replace
+                # the number '755' in the code below with the desired date range. Examples of values for different data
+                # ranges: 177 = First week of january; 755 = Whole january.
+                raw_measurements = pd.DataFrame(content[9:177])
+                raw_measurements.columns = content[8]  # Defining the dataframe header with names of each column
+
+                # Removing rows with missing values
+                raw_measurements[metric].replace('', np.nan, inplace=True)
+                raw_measurements.dropna(subset=[metric], inplace=True)
+
+                # Parsing sensor measurements
+                sensor['measurements'] = [float(re.sub(',', '.', measurement))
+                                          for measurement in list(raw_measurements[metric])]
+
+                # Parsing measurement timestamps
+                dates = list(raw_measurements['Data'])
+                hours = list(raw_measurements['Hora UTC'])
+                sensor['timestamps'] = [datetime.strptime(f'{dates[i]} {hours[i][0:4]}', '%Y/%m/%d %H%M')
+                                        for i in range(0, len(dates))]
 
             dataset.append(sensor)
 
@@ -162,6 +175,10 @@ class Simulator:
 
         if algorithm == 'proposed_heuristic':
             return(proposed_heuristic)
+        if algorithm == 'knn':
+            return(knn)
+        if algorithm == 'idw':
+            return(idw)
         else:
             raise Exception('Invalid heuristic algorithm.')
 
@@ -176,8 +193,22 @@ class Simulator:
             Name of the output file containing the simulation results
         """
 
-        print('\n\n=== SIMULATION RESULTS ===')
-        for step_metrics in Simulator.environment.metrics:
-            print(step_metrics)
+        # print('\n\n=== PER-STEP RESULTS ===')
 
-        Topology.first().draw(showgui=True, savefig=True)
+        expected_values = [step_results['measurements'][0]['real_measurement'] for step_results in Simulator.environment.metrics]
+        inferred_values = [step_results['measurements'][0]['inference'] for step_results in Simulator.environment.metrics]
+        accuracy = [step_results['measurements'][0]['accuracy'] for step_results in Simulator.environment.metrics]
+        print('\n\n=== GENERAL RESULTS ===')
+
+        mse = mean_squared_error(expected_values, inferred_values)
+        mae = mean_absolute_error(expected_values, inferred_values)
+        r2 = r2_score(expected_values, inferred_values)
+
+        print(f'Heuristic: {Simulator.environment.heuristic}')
+        print(f'R²: {r2}')
+        print(f'Mean Squared Error: {mse}')
+        print(f'Mean Absolute Error: {mae}')
+        print(f'Accuracy: {round(sum(accuracy) / len(accuracy), 4)}%')
+
+
+        Topology.first().draw(showgui=False, savefig=False)
