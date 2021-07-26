@@ -21,8 +21,3 @@ def knn(sensor_id):
     neighbors_measurements = [neighbor.measurement for neighbor in neighbor_sensors]
 
     virtual_sensor.inferred_measurement = sum(neighbors_measurements) / len(neighbor_sensors)
-
-    print(f'[STEP {SimulationEnvironment.first().current_step}] Neighbors:')
-    for neighbor in neighbor_sensors:
-        print(f'    Sensor_{neighbor.id}. Measurement: {neighbor.measurement}')
-    print('\n')

@@ -1,9 +1,6 @@
 # General-Purpose Components
 from simulator.misc.object_collection import ObjectCollection
 
-# Helper Methods
-from simulator.misc.helper_methods import inference_accuracy
-
 # Simulator Components
 from simulator.components.sensor import Sensor
 from simulator.components.topology import Topology
@@ -100,11 +97,9 @@ class SimulationEnvironment(ObjectCollection):
 
             if sensor.inferred_measurement is not None:
 
-                accuracy = inference_accuracy(expected=sensor.measurement, inferred=sensor.inferred_measurement)
-
                 measurements.append({'sensor': sensor.id, 'timestamp': sensor.timestamp,
-                                     'real_measurement': sensor.measurement, 'inference': sensor.inferred_measurement,
-                                     'accuracy': accuracy})
+                                     'real_measurement': sensor.measurement,
+                                     'inference': sensor.inferred_measurement})
 
         step_metrics = {'step': self.current_step, 'measurements': measurements}
 

@@ -21,7 +21,7 @@ class Topology(ObjectCollection, nx.Graph):
         Topology.instances.append(self)
 
 
-    def draw(self, showgui=True, savefig=True, figname='topology.png'):
+    def draw(self, showgui=True, savefig=True, figname='topology.jpg', dpi=200):
         """ Draws the network topology.
         """
 
@@ -48,7 +48,7 @@ class Topology(ObjectCollection, nx.Graph):
                 font_color='white', node_color=colors, font_weight='bold')
 
         if savefig:
-            fig.savefig(figname, dpi=200)
+            fig.savefig(figname, dpi=dpi)
 
         if showgui:
             plt.show()

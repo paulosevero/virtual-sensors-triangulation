@@ -5,6 +5,14 @@ If you get any error when installing cartopy and/or shapely, execute the followi
 sudo apt install libgeos-dev libproj-dev proj-data proj-bin
 ```
 
+
+## Running
+
+```
+python3 -B -m simulator -d "inmet_2020_rs" -m "TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)" -t 24 -s 24 -a "idw" -o "topo1.png" && python3 -B -m simulator -d "inmet_2020_rs" -m "TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)" -t 24 -s 24 -a "knn" -o "topo1.png" && python3 -B -m simulator -d "inmet_2020_rs" -m "TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)" -t 24 -s 24 -a "first_fit_proposal" -o "topo1.png" && python3 -B -m simulator -d "inmet_2020_rs" -m "TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)" -t 24 -s 24 -a "proposed_heuristic" -o "topo1.png"
+```
+
+
 ## References
 
 - https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.LinearNDInterpolator.html

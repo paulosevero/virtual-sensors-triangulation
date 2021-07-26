@@ -78,7 +78,7 @@ class Sensor(ObjectCollection):
 
 
     @classmethod
-    def create_delaunay_triangles(cls, physical_sensors):
+    def create_delaunay_triangles(cls, physical_sensors, create_edges=False):
         """ Creates a mesh of triangles using the delaunay algorithm.
 
         Parameters
@@ -98,10 +98,11 @@ class Sensor(ObjectCollection):
         triangles = [[Sensor.find_by(attribute_name='coordinates', attribute_value=sensors[i])[0] for i in list(triangle)]
                      for triangle in Delaunay(sensors).simplices]
 
-        for triangle in triangles:
-            topo.add_edge(triangle[2], triangle[0])
-            for i in range(0, 2):
-                topo.add_edge(triangle[i], triangle[i+1])
+        if create_edges:
+            for triangle in triangles:
+                topo.add_edge(triangle[2], triangle[0])
+                for i in range(0, 2):
+                    topo.add_edge(triangle[i], triangle[i + 1])
 
         return(triangles)
 
@@ -313,6 +314,26 @@ class Sensor(ObjectCollection):
             return(True)
         else:
             return(False)
+
+
+    @classmethod
+    def get_triangle_centroid(cls, triangle):
+        """
+        """
+
+        x1 = triangle[0].coordinates[0]
+        y1 = triangle[0].coordinates[1]
+
+        x2 = triangle[1].coordinates[0]
+        y2 = triangle[1].coordinates[1]
+
+        x3 = triangle[2].coordinates[0]
+        y3 = triangle[2].coordinates[1]
+
+        centroid_x = round((x1 + x2 + x3) / 3, 2)
+        centroid_y = round((y1 + y2 + y3) / 3, 2)
+
+        return((centroid_x, centroid_y))
 
 
     def can_be_triangulated(self, sensors):

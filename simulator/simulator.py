@@ -18,6 +18,7 @@ from simulator.components.topology import Topology
 
 # Heuristic Algorithms
 from simulator.heuristics.proposed_heuristic import proposed_heuristic
+from simulator.heuristics.first_fit_proposal import first_fit_proposal
 from simulator.heuristics.knn import knn
 from simulator.heuristics.idw import idw
 
@@ -175,9 +176,11 @@ class Simulator:
 
         if algorithm == 'proposed_heuristic':
             return(proposed_heuristic)
-        if algorithm == 'knn':
+        elif algorithm == 'first_fit_proposal':
+            return(first_fit_proposal)
+        elif algorithm == 'knn':
             return(knn)
-        if algorithm == 'idw':
+        elif algorithm == 'idw':
             return(idw)
         else:
             raise Exception('Invalid heuristic algorithm.')
@@ -193,22 +196,17 @@ class Simulator:
             Name of the output file containing the simulation results
         """
 
-        # print('\n\n=== PER-STEP RESULTS ===')
-
         expected_values = [step_results['measurements'][0]['real_measurement'] for step_results in Simulator.environment.metrics]
         inferred_values = [step_results['measurements'][0]['inference'] for step_results in Simulator.environment.metrics]
-        accuracy = [step_results['measurements'][0]['accuracy'] for step_results in Simulator.environment.metrics]
-        print('\n\n=== GENERAL RESULTS ===')
 
         mse = mean_squared_error(expected_values, inferred_values)
         mae = mean_absolute_error(expected_values, inferred_values)
         r2 = r2_score(expected_values, inferred_values)
 
+        print('\n\n=== GENERAL RESULTS ===')
         print(f'Heuristic: {Simulator.environment.heuristic}')
         print(f'R²: {r2}')
         print(f'Mean Squared Error: {mse}')
         print(f'Mean Absolute Error: {mae}')
-        print(f'Accuracy: {round(sum(accuracy) / len(accuracy), 4)}%')
 
-
-        Topology.first().draw(showgui=False, savefig=False)
+        Topology.first().draw(showgui=False, savefig=False, figname=output_file)
