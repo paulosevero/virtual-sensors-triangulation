@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import re
 from datetime import datetime
-from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
@@ -21,6 +20,8 @@ from simulator.heuristics.proposed_heuristic import proposed_heuristic
 from simulator.heuristics.first_fit_proposal import first_fit_proposal
 from simulator.heuristics.knn import knn
 from simulator.heuristics.idw import idw
+
+VERBOSITY = 1
 
 
 class Simulator:
@@ -60,18 +61,18 @@ class Simulator:
             if '.csv' in target:
                 print(f'CSV input file: {target}')
 
-            if '.json' in target:
+            elif '.json' in target:
                 print(f'JSON input file: {target}')
 
-            else:
+            elif formatting == 'INMET-BR':
                 dataset = Simulator.parse_dataset_inmet_br(target=target, metric=metric)
+            else:
+                raise Exception('Invalid dataset.')
 
             # Adding sensors to the NetworkX topology
             for data in dataset:
-                sensor = Sensor(coordinates=data['coordinates'], type='physical', timestamps=data['timestamps'],
-                                measurements=data['measurements'], alias=data['alias'])
-
-                topo.add_node(sensor)
+                Sensor(coordinates=data['coordinates'], type='physical', timestamps=data['timestamps'],
+                       measurements=data['measurements'], alias=data['alias'])
 
 
     @classmethod
@@ -107,10 +108,10 @@ class Simulator:
                 sensor['coordinates'] = (latitude, longitude)
                 sensor['alias'] = content[2][1]
 
-                # Converting part of the CSV with data measurements to a pandas dataframe to ease manipulation. Replace
-                # the number '755' in the code below with the desired date range. Examples of values for different data
-                # ranges: 177 = First week of january; 755 = Whole january.
-                raw_measurements = pd.DataFrame(content[9:177])
+                # Converting part of the CSV with data measurements to a pandas dataframe to ease manipulation
+                starting_row = 1449
+                ending_row = starting_row + 23
+                raw_measurements = pd.DataFrame(content[starting_row:starting_row + ending_row])
                 raw_measurements.columns = content[8]  # Defining the dataframe header with names of each column
 
                 # Removing rows with missing values
@@ -118,14 +119,12 @@ class Simulator:
                 raw_measurements.dropna(subset=[metric], inplace=True)
 
                 # Parsing sensor measurements
-                sensor['measurements'] = [float(re.sub(',', '.', measurement))
-                                          for measurement in list(raw_measurements[metric])]
+                sensor['measurements'] = [float(re.sub(',', '.', measurement)) for measurement in list(raw_measurements[metric])]
 
                 # Parsing measurement timestamps
                 dates = list(raw_measurements['Data'])
                 hours = list(raw_measurements['Hora UTC'])
-                sensor['timestamps'] = [datetime.strptime(f'{dates[i]} {hours[i][0:4]}', '%Y/%m/%d %H%M')
-                                        for i in range(0, len(dates))]
+                sensor['timestamps'] = [datetime.strptime(f'{dates[i]} {hours[i][0:4]}', '%Y/%m/%d %H%M') for i in range(0, len(dates))]
 
             dataset.append(sensor)
 
@@ -133,7 +132,7 @@ class Simulator:
 
 
     @classmethod
-    def run(cls, steps, algorithm, sensor_id):
+    def run(cls, steps, algorithm, sensors):
         """ Starts the simulation.
 
         Parameters
@@ -144,8 +143,8 @@ class Simulator:
         algorithm : string
             Heuristic algorithm that will be executed
 
-        sensor_id : int
-            Target sensor whose measurement will be inferred
+        sensors : int
+            Number of sensors whose measurements will be inferred
         """
 
         # Creating a simulation environment
@@ -155,7 +154,7 @@ class Simulator:
         Simulator.environment.heuristic = algorithm
 
         # Starting the simulation
-        Simulator.environment.run(sensor_id=sensor_id, heuristic=Simulator.heuristic(algorithm=algorithm))
+        Simulator.environment.run(sensors=sensors, heuristic=Simulator.heuristic(algorithm=algorithm))
 
 
     @classmethod
@@ -175,12 +174,16 @@ class Simulator:
         """
 
         if algorithm == 'proposed_heuristic':
+            Simulator.environment.heuristic = 'Proposed Heuristic'
             return(proposed_heuristic)
         elif algorithm == 'first_fit_proposal':
+            Simulator.environment.heuristic = 'Proposed Heuristic (Simplified Version)'
             return(first_fit_proposal)
         elif algorithm == 'knn':
+            Simulator.environment.heuristic = 'k-Nearest Neighbors'
             return(knn)
         elif algorithm == 'idw':
+            Simulator.environment.heuristic = 'Inverse Distance Weighting'
             return(idw)
         else:
             raise Exception('Invalid heuristic algorithm.')
@@ -196,17 +199,56 @@ class Simulator:
             Name of the output file containing the simulation results
         """
 
-        expected_values = [step_results['measurements'][0]['real_measurement'] for step_results in Simulator.environment.metrics]
-        inferred_values = [step_results['measurements'][0]['inference'] for step_results in Simulator.environment.metrics]
 
-        mse = mean_squared_error(expected_values, inferred_values)
-        mae = mean_absolute_error(expected_values, inferred_values)
-        r2 = r2_score(expected_values, inferred_values)
+        metrics_by_sensor = []
 
-        print('\n\n=== GENERAL RESULTS ===')
-        print(f'Heuristic: {Simulator.environment.heuristic}')
-        print(f'R²: {r2}')
-        print(f'Mean Squared Error: {mse}')
-        print(f'Mean Absolute Error: {mae}')
+        for sensor in Simulator.environment.virtual_sensors:
 
-        Topology.first().draw(showgui=False, savefig=False, figname=output_file)
+            # Initializing a dictionary that will centralize all metrics from the sensor
+            sensor_metrics = {'sensor': sensor, 'real_measurements': [], 'inferences': [], 'timestamps': [],
+                              'r2': None, 'mse': None, 'mae': None}
+
+            # Collecting real measurements and inferences from the sensor in each step
+            for step in Simulator.environment.metrics:
+                metrics = next(metrics for metrics in step['measurements'] if metrics['sensor'] == sensor.id)
+                sensor_metrics['timestamps'].append(metrics['timestamp'])
+                sensor_metrics['real_measurements'].append(metrics['real_measurement'])
+                sensor_metrics['inferences'].append(metrics['inference'])
+
+            # Calculating accuracy metrics for the sensor inferences
+            sensor_metrics['mse'] = mean_squared_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'], squared=False)
+            sensor_metrics['mae'] = mean_absolute_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'])
+
+            # Adding sensor metrics to the list of metrics of all sensors
+            metrics_by_sensor.append(sensor_metrics)
+
+
+        mse = []
+        mae = []
+
+        if VERBOSITY >= 2:
+            print('=== METRICS BY SENSOR ===')
+        for sensor_metrics in metrics_by_sensor:
+            if VERBOSITY >= 2:
+                print(f'Sensor_{sensor_metrics["sensor"]}')
+                print(f'    Real Measurements ({len(sensor_metrics["real_measurements"])}): {sensor_metrics["real_measurements"]}')
+                print(f'    Inferences ({len(sensor_metrics["inferences"])}): {[round(inference, 1) for inference in sensor_metrics["inferences"]]}')
+                print(f'    Coefficient of Determination (R²): {sensor_metrics["r2"]}')
+                print(f'    Root Mean Squared Error (RMSE): {sensor_metrics["mse"]}')
+                print(f'    Mean Absolute Error (MAE): {sensor_metrics["mae"]}')
+
+            mse.append(sensor_metrics['mse'])
+            mae.append(sensor_metrics['mae'])
+
+        mse = sum(mse) / len(mse)
+        mae = sum(mae) / len(mae)
+
+
+        if VERBOSITY >= 1:
+            print('=== OVERALL RESULTS ===')
+            print(f'Heuristic: {Simulator.environment.heuristic}')
+            print(f'Sensors: {[sensor.id for sensor in Simulator.environment.virtual_sensors]}')
+            print(f'Root Mean Squared Error (RMSE): {mse}')
+            print(f'Mean Absolute Error (MAE): {mae}')
+
+            Topology.first().draw(showgui=False, savefig=False)

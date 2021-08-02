@@ -1,3 +1,6 @@
+# Python Libraries
+import random
+
 # General-Purpose Components
 from simulator.misc.object_collection import ObjectCollection
 
@@ -42,13 +45,21 @@ class SimulationEnvironment(ObjectCollection):
         self.steps = steps
         self.current_step = 1
 
+        # Logic sensors whose measurements will be estimated
+        self.virtual_sensors = []
+
         # Adding the new object to the list of instances of its class
         SimulationEnvironment.instances.append(self)
 
 
-    def run(self, sensor_id, heuristic):
+    def run(self, sensors, heuristic):
         """ Triggers the set of events that ocurr during the simulation.
         """
+
+        # Picking 'n' virtual sensors whose measurements will be estimated
+        self.virtual_sensors = random.sample([sensor for sensor in Sensor.all() if sensor.type == 'physical'], sensors)
+        for sensor in self.virtual_sensors:
+            sensor.type = 'logical'
 
         # The simulation goes on while the stopping criteria is not met
         while self.current_step <= self.steps:
@@ -56,7 +67,7 @@ class SimulationEnvironment(ObjectCollection):
             self.update_system_state()
 
             # Running a set of user-defined tasks
-            heuristic(sensor_id=sensor_id)
+            heuristic()
 
             # Removing temporary items in the topology
             self.clean_environment()
@@ -84,6 +95,8 @@ class SimulationEnvironment(ObjectCollection):
         Topology.first().remove_edges_from(list(Topology.first().edges()))
 
         auxiliary_sensors = [sensor for sensor in Sensor.all() if sensor.type == 'auxiliary']
+
+        Sensor.instances = [sensor for sensor in Sensor.all() if sensor.type == 'physical' or sensor.type == 'logical']
         Topology.first().remove_nodes_from(auxiliary_sensors)
 
 

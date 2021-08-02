@@ -63,7 +63,8 @@ class Sensor(ObjectCollection):
         self.inferred_measurement = None
 
         # NetworkX topology
-        self.topology = None
+        self.topology = Topology.first()
+        self.topology.add_node(self)
 
         # Adding the new object to the list of instances of its class
         Sensor.instances.append(self)
@@ -74,7 +75,7 @@ class Sensor(ObjectCollection):
         """
 
         return(f'Sensor_{self.id}. Type: {self.type}. Alias: {self.alias}. ' +
-               f'Coordinates: {self.coordinates}. Value: {self.measurements}')
+               f'Coordinates: {self.coordinates}. Value: {self.measurement}')
 
 
     @classmethod
@@ -149,7 +150,7 @@ class Sensor(ObjectCollection):
         [1] https://stackoverflow.com/questions/4637031/geospatial-indexing-with-redis-sinatra-for-a-facebook-app
         """
 
-        pos = (self.coordinates[0]+90)*180+self.coordinates[1]
+        pos = (self.coordinates[0] + 90) * 180 + self.coordinates[1]
         return(pos)
 
 
@@ -178,9 +179,9 @@ class Sensor(ObjectCollection):
         return(inferred_measurement)
 
 
-    def calculate_measurement(self, physical_sensors):
-        """ Infers the value of a logical sensor by triangulating the
-        value of existing physical sensors positioned across a given area.
+    def create_auxiliary_sensors(self, physical_sensors):
+        """ Creates a set of auxiliary sensors that will be
+        used to estimate the measurement of a virtual sensor.
 
         Parameters
         ==========
@@ -192,8 +193,8 @@ class Sensor(ObjectCollection):
 
         Returns
         =======
-        inferred_measurement : float
-            Inferred measurement of the logical sensor
+        auxiliary_sensors : float
+            Auxiliary sensors that will be used to estimate the measurement of the logical sensor
         """
 
         line_physensor1_physensor2 = line(physical_sensors[0].coordinates, physical_sensors[1].coordinates)
@@ -214,16 +215,57 @@ class Sensor(ObjectCollection):
 
         # https://stackoverflow.com/questions/8285599/is-there-a-formula-to-change-a-latitude-and-longitude-into-a-single-number
         # https://stackoverflow.com/questions/4637031/geospatial-indexing-with-redis-sinatra-for-a-facebook-app
-        value_aux_sensor1 = aux_sensor1.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
-                                                                                sensor2=physical_sensors[1])
-        value_aux_sensor2 = aux_sensor2.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
-                                                                                sensor2=physical_sensors[2])
-        value_aux_sensor3 = aux_sensor3.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[1],
-                                                                                sensor2=physical_sensors[2])
+        aux_sensor1.inferred_measurement = aux_sensor1.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
+                                                                                               sensor2=physical_sensors[1])
 
-        inferred_measurement = (value_aux_sensor1 + value_aux_sensor2 + value_aux_sensor3) / 3
+        aux_sensor2.inferred_measurement = aux_sensor2.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
+                                                                                               sensor2=physical_sensors[2])
 
-        return(inferred_measurement)
+        aux_sensor3.inferred_measurement = aux_sensor3.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[1],
+                                                                                               sensor2=physical_sensors[2])
+
+
+        return([aux_sensor1, aux_sensor2, aux_sensor3])
+
+
+    def calculate_measurement(self, physical_sensors, use_auxiliary_sensors=False, weighted=False):
+        """ Infers the value of a logical sensor by triangulating the
+        value of existing physical sensors positioned across a given area.
+
+        Parameters
+        ==========
+        physical_sensors : list
+            List of physical sensors used to triangulate the logical sensor
+
+        logical_sensor : Sensor
+            Logical sensor whose measurement will be inferred
+
+        Returns
+        =======
+        inferred_measurement : float
+            Inferred measurement of the logical sensor
+        """
+
+        if use_auxiliary_sensors:
+            auxiliary_sensors = self.create_auxiliary_sensors(physical_sensors=physical_sensors)
+            sensors = sorted(auxiliary_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates))
+            measurements = [sensor.inferred_measurement for sensor in sensors]
+        else:
+            sensors = sorted(physical_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates))
+            measurements = [sensor.measurement for sensor in sensors]
+
+
+        weights = [1 / distance.euclidean(self.coordinates, sensor.coordinates) for sensor in sensors]
+
+
+        if weighted:
+            product_measurements_weights = [measurements[i] * weights[i] for i in range(len(sensors))]
+            inference = sum(product_measurements_weights) / sum(weights)
+        else:
+            inference = sum(measurements) / len(measurements)
+
+
+        return(inference)
 
 
     def is_inside_line(self, sensor1, sensor2):
@@ -284,22 +326,16 @@ class Sensor(ObjectCollection):
         sensor3 = triangle[2]
 
         # Calculate area of triangle ABC
-        A = triangle_area(sensor1.coordinates[0], sensor1.coordinates[1],
-                          sensor2.coordinates[0], sensor2.coordinates[1],
-                          sensor3.coordinates[0], sensor3.coordinates[1])
+        A = triangle_area([sensor1, sensor2, sensor3])
 
         # Calculate area of triangle PBC
-        A1 = triangle_area(self.coordinates[0], self.coordinates[1],
-                           sensor2.coordinates[0], sensor2.coordinates[1],
-                           sensor3.coordinates[0], sensor3.coordinates[1])
+        A1 = triangle_area([self, sensor2, sensor3])
+
         # Calculate area of triangle PAC
-        A2 = triangle_area(sensor1.coordinates[0], sensor1.coordinates[1],
-                           self.coordinates[0], self.coordinates[1],
-                           sensor3.coordinates[0], sensor3.coordinates[1])
+        A2 = triangle_area([sensor1, self, sensor3])
+
         # Calculate area of triangle PAB
-        A3 = triangle_area(sensor1.coordinates[0], sensor1.coordinates[1],
-                           sensor2.coordinates[0], sensor2.coordinates[1],
-                           self.coordinates[0], self.coordinates[1])
+        A3 = triangle_area([sensor1, sensor2, self])
 
         # Calculating the minimum precision (number of decimal) of the sensors' coordinates. We use
         # the minimum precision instead of the maximum to avoid misleading calculations of whether
