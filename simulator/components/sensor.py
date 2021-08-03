@@ -175,7 +175,7 @@ class Sensor(ObjectCollection):
 
         interpolation = scipy.interpolate.interp1d(positions, measurements)
 
-        inferred_measurement = interpolation(self.get_encoded_position())
+        inferred_measurement = float(interpolation(self.get_encoded_position()))
         return(inferred_measurement)
 
 

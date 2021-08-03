@@ -1,5 +1,6 @@
 # Python Libraries
 import math
+import statistics
 from scipy.spatial import distance
 from sklearn.metrics import mean_squared_error
 
@@ -183,11 +184,9 @@ def triangle_weight(virtual_sensor, triangle):
 
     auxiliary_sensors = virtual_sensor.create_auxiliary_sensors(physical_sensors=triangle)
 
-    dist_auxsensor1_logical_sensor = distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[0].coordinates)
-    dist_auxsensor2_logical_sensor = distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[1].coordinates)
-    dist_auxsensor3_logical_sensor = distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[2].coordinates)
+    distance_from_virtual_sensor = [distance.euclidean(virtual_sensor.coordinates, sensor.coordinates) for sensor in auxiliary_sensors]
 
-    weight = (dist_auxsensor1_logical_sensor + dist_auxsensor2_logical_sensor + dist_auxsensor3_logical_sensor) / 3
+    weight = statistics.mean(distance_from_virtual_sensor)
 
     return(weight)
 

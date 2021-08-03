@@ -1,8 +1,8 @@
 # General-purpose Simulator Modules
 from simulator.simulation_environment import SimulationEnvironment
 
-# Simulator Components
-from simulator.components.topology import Topology
+# Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value (using weighted mean)
+NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = 3
 
 
 def first_fit_proposal():
@@ -27,16 +27,30 @@ def first_fit_proposal():
                 inference = virtual_sensor.interpolate_measurement_aligned_sensors(sensor1=aligned_sensors[0], sensor2=aligned_sensors[1])
                 virtual_sensor.inferred_measurement = inference
 
-                Topology.first().add_edge(aligned_sensors[0], aligned_sensors[1])
+                virtual_sensor.topology.add_edge(aligned_sensors[0], aligned_sensors[1])
                 break
 
+            else:
                 # Checking if the virtual sensor is inside any triangle in a mesh of triangles formed with Delaunay algorithm. If so,
                 # infers the sensor measurement by interpolating values of different lines based on the barycentric distance
                 triangles = virtual_sensor.can_be_triangulated(covered_sensors)
-            elif triangles:
-                triangle = triangles[0]
 
-                inference = virtual_sensor.calculate_measurement(physical_sensors=triangle, use_auxiliary_sensors=True, weighted=False)
-                virtual_sensor.inferred_measurement = inference
+                if triangles:
+                    triangle = triangles[0]
 
-                break
+                    inference = virtual_sensor.calculate_measurement(physical_sensors=triangle, use_auxiliary_sensors=True, weighted=False)
+                    virtual_sensor.inferred_measurement = inference
+
+                    break
+
+                # If the virtual sensor is not inside any triangle, estimates its measurement based on the values
+                # of its k-nearest neighbors in a weighted arithmetic mean which gives a higher weight to the
+                # neighbor sensors located closer to the virtual sensor
+                else:
+                    neighbor_sensors = sensors[0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY]
+
+                    inference = virtual_sensor.calculate_measurement(physical_sensors=neighbor_sensors, use_auxiliary_sensors=False,
+                                                                     weighted=False)
+                    virtual_sensor.inferred_measurement = inference
+
+                    break

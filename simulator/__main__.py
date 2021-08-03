@@ -45,7 +45,7 @@ def main(dataset, steps, sensors, algorithm, metric, output):
 
 if __name__ == '__main__':
     # Defining a seed value to enable reproducibility in case any stochastic behavior occurs during simulation
-    random.seed(0)  # VALID SEED VALUES: [11, 111]
+    random.seed(1)  # VALID SEED VALUES: [11, 111]
 
     # Parsing named arguments from the command line
     parser = argparse.ArgumentParser()
