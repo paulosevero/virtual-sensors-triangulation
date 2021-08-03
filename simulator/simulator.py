@@ -251,4 +251,4 @@ class Simulator:
             print(f'Root Mean Squared Error (RMSE): {mse}')
             print(f'Mean Absolute Error (MAE): {mae}')
 
-            Topology.first().draw(showgui=False, savefig=False)
+            Topology.first().draw(showgui=False, savefig=True)
