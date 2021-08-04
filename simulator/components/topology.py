@@ -39,7 +39,7 @@ class Topology(ObjectCollection, nx.Graph):
 
             if sensor.type == 'physical':
                 colors.append('black')
-            elif sensor.type == 'logical':
+            elif sensor.type == 'virtual':
                 colors.append('red')
             elif sensor.type == 'auxiliary':
                 colors.append('green')

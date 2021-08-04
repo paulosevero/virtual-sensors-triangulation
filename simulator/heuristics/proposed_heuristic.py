@@ -8,11 +8,6 @@ from simulator.simulation_environment import SimulationEnvironment
 from simulator.misc.helper_methods import triangle_weight
 from simulator.misc.helper_methods import is_well_conditioned_triangle
 
-# Parameter that define the number of neighbor sensors that will be used to form the triangles to estimate the virtual sensor value
-NEIGHBORS_TO_FORM_TRIANGLES = 15
-# Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value (using weighted mean)
-NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = 3
-
 
 def proposed_heuristic():
     """ Proposed heuristic that calculates the value of
@@ -26,6 +21,17 @@ def proposed_heuristic():
         Calculate the virtual sensor value based on the weighted mean of its nearest spatial neighbor sensors.
         More specifically, the closest the neighbor sensor is from the virtual sensor the higher is its weight.
     """
+
+    # Parameter that define the number of neighbor sensors that will be used to form the triangles to estimate the virtual sensor value
+    NEIGHBORS_TO_FORM_TRIANGLES = SimulationEnvironment.first().sensors_to_form_triangles
+
+    # Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value (using weighted mean)
+    NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
+
+    # Adding the number of neighbors (given by the 'k' parameter) and the number of sensors
+    # used to create triangles (given by α) to the heuristic's name to ease post-simulation analysis
+    SimulationEnvironment.first().heuristic = f'Proposal (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY}, α={NEIGHBORS_TO_FORM_TRIANGLES})'
+
 
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
     for virtual_sensor in virtual_sensors:

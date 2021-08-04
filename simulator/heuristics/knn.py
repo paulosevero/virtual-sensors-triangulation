@@ -1,9 +1,6 @@
 # General-purpose Simulator Modules
 from simulator.simulation_environment import SimulationEnvironment
 
-# Number of neighbors that will be used to estimate the value of virtual sensors
-NUMBER_OF_NEIGHBORS = 3
-
 
 def knn():
     """ Adapted version of the k-Nearest Neighbors (kNN) algorithm that calculates the
@@ -17,15 +14,18 @@ def knn():
     R. B. (2001). Missing value estimation methods for DNA microarrays. Bioinformatics, 17(6), 520-525.
     """
 
+    # Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value
+    NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
+
     # Adding the number of neighbors (given by the 'k' parameter) to the heuristic's name to ease post-simulation analysis
-    SimulationEnvironment.first().heuristic = f'k-Nearest Neighbors (k={NUMBER_OF_NEIGHBORS})'
+    SimulationEnvironment.first().heuristic = f'k-Nearest Neighbors (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})'
 
     # Gathering the list of virtual sensors whose measurements need to be inferred
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
 
     # Inferring the values of the virtual sensors using the kNN algorithm
     for virtual_sensor in virtual_sensors:
-        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[0:NUMBER_OF_NEIGHBORS]
+        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY]
         neighbors_measurements = [neighbor.measurement for neighbor in neighbor_sensors]
 
         # Calculating the sensor value through the arithmetic mean of its k nearest spatial neighbors

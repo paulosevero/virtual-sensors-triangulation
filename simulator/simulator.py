@@ -1,9 +1,10 @@
 # Python Libraries
 import os
 import csv
+import re
+import statistics
 import numpy as np
 import pandas as pd
-import re
 from datetime import datetime
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
@@ -132,7 +133,7 @@ class Simulator:
 
 
     @classmethod
-    def run(cls, steps, algorithm, sensors):
+    def run(cls, steps, metric, algorithm, sensors, sensors_to_form_triangles, neighbors):
         """ Starts the simulation.
 
         Parameters
@@ -140,21 +141,31 @@ class Simulator:
         steps : int
             Number of simulation steps
 
+        metric : string
+            Metric to be inferred
+
         algorithm : string
             Heuristic algorithm that will be executed
 
         sensors : int
-            Number of sensors whose measurements will be inferred
+            Number of virtual sensors whose measurements will be inferred
+
+        sensors_to_form_triangles : int
+            Number of sensors that can be used to form triangles
+
+        neighbors : int
+            Number of nearest neighbor sensors that can be used to estimate the value of a virtual sensor
         """
 
         # Creating a simulation environment
-        Simulator.environment = SimulationEnvironment(steps=int(steps), dataset=Simulator.dataset, heuristic=algorithm)
+        Simulator.environment = SimulationEnvironment(steps=int(steps), dataset=Simulator.dataset, metric=metric, heuristic=algorithm)
 
         # Informing the simulation environment what's the heuristic will be executed
         Simulator.environment.heuristic = algorithm
 
         # Starting the simulation
-        Simulator.environment.run(sensors=sensors, heuristic=Simulator.heuristic(algorithm=algorithm))
+        Simulator.environment.run(sensors=sensors, heuristic=Simulator.heuristic(algorithm=algorithm),
+                                  sensors_to_form_triangles=sensors_to_form_triangles, neighbors=neighbors)
 
 
     @classmethod
@@ -205,8 +216,7 @@ class Simulator:
         for sensor in Simulator.environment.virtual_sensors:
 
             # Initializing a dictionary that will centralize all metrics from the sensor
-            sensor_metrics = {'sensor': sensor, 'real_measurements': [], 'inferences': [], 'timestamps': [],
-                              'r2': None, 'mse': None, 'mae': None}
+            sensor_metrics = {'sensor': sensor, 'real_measurements': [], 'inferences': [], 'timestamps': [], 'rmse': None, 'mae': None}
 
             # Collecting real measurements and inferences from the sensor in each step
             for step in Simulator.environment.metrics:
@@ -216,15 +226,15 @@ class Simulator:
                 sensor_metrics['inferences'].append(metrics['inference'])
 
             # Calculating accuracy metrics for the sensor inferences
-            sensor_metrics['mse'] = mean_squared_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'], squared=False)
+            sensor_metrics['rmse'] = mean_squared_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'], squared=False)
             sensor_metrics['mae'] = mean_absolute_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'])
 
             # Adding sensor metrics to the list of metrics of all sensors
             metrics_by_sensor.append(sensor_metrics)
 
 
-        mse = []
-        mae = []
+        list_of_rmse_results = []
+        list_of_mae_results = []
 
         if VERBOSITY >= 2:
             print('=== METRICS BY SENSOR ===')
@@ -233,22 +243,35 @@ class Simulator:
                 print(f'Sensor_{sensor_metrics["sensor"]}')
                 print(f'    Real Measurements ({len(sensor_metrics["real_measurements"])}): {sensor_metrics["real_measurements"]}')
                 print(f'    Inferences ({len(sensor_metrics["inferences"])}): {[round(inference, 1) for inference in sensor_metrics["inferences"]]}')
-                print(f'    Coefficient of Determination (R²): {sensor_metrics["r2"]}')
                 print(f'    Root Mean Squared Error (RMSE): {sensor_metrics["mse"]}')
                 print(f'    Mean Absolute Error (MAE): {sensor_metrics["mae"]}')
 
-            mse.append(sensor_metrics['mse'])
-            mae.append(sensor_metrics['mae'])
+            list_of_rmse_results.append(sensor_metrics['rmse'])
+            list_of_mae_results.append(sensor_metrics['mae'])
 
-        mse = sum(mse) / len(mse)
-        mae = sum(mae) / len(mae)
+        stdev_rmse = statistics.stdev(list_of_rmse_results)
+        stdev_mae = statistics.stdev(list_of_mae_results)
+        rmse = sum(list_of_rmse_results) / len(list_of_rmse_results)
+        mae = sum(list_of_mae_results) / len(list_of_mae_results)
 
 
         if VERBOSITY >= 1:
             print('=== OVERALL RESULTS ===')
             print(f'Heuristic: {Simulator.environment.heuristic}')
+            print(f'Metric: {Simulator.environment.metric}')
             print(f'Sensors: {[sensor.id for sensor in Simulator.environment.virtual_sensors]}')
-            print(f'Root Mean Squared Error (RMSE): {mse}')
-            print(f'Mean Absolute Error (MAE): {mae}')
 
-            Topology.first().draw(showgui=False, savefig=True)
+            if VERBOSITY >= 2:
+                print('Raw Results:')
+                print(f'    RMSE: {list_of_rmse_results}')
+                print(f'    MAE: {list_of_mae_results}')
+
+            print('Summary:')
+            print(f'    Root Mean Squared Error (RMSE): {rmse}')
+            print(f'    Mean Absolute Error (MAE): {mae}')
+
+            if VERBOSITY >= 2:
+                print(f'    Standard Deviation RMSE: {stdev_rmse}')
+                print(f'    Standard Deviation MAE: {stdev_mae}')
+
+            Topology.first().draw(showgui=False, savefig=False)

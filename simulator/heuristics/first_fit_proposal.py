@@ -1,13 +1,17 @@
 # General-purpose Simulator Modules
 from simulator.simulation_environment import SimulationEnvironment
 
-# Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value (using weighted mean)
-NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = 3
-
 
 def first_fit_proposal():
     """ Simplified version of the proposed heuristic.
     """
+
+    # Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value
+    NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
+
+    # Adding the number of neighbors (given by the 'k' parameter) to the heuristic's name to ease post-simulation analysis
+    SimulationEnvironment.first().heuristic = f'First-Fit Proposal (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})'
+
 
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
 

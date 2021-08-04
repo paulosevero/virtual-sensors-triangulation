@@ -4,9 +4,6 @@ import numpy as np
 # General-purpose Simulator Modules
 from simulator.simulation_environment import SimulationEnvironment
 
-# Simulator Components
-from simulator.components.sensor import Sensor
-
 
 def distance_matrix(x0, y0, x1, y1):
     """ Calculates the distance matrix between two locations.
@@ -49,13 +46,24 @@ def idw():
     irregularly- spaced data. In Proceedings of the 1968 23rd ACM national conference (pp. 517-524).
     """
 
+    # Parameter that define the number of neighbor sensors that will be used to estimate the virtual sensor value
+    NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
+
+    # Adding the number of neighbors (given by the 'k' parameter) to the heuristic's name to ease post-simulation analysis
+    SimulationEnvironment.first().heuristic = f'Inverse Distance Weighting (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})'
+
+
+    # Gathering the list of virtual sensors whose measurements need to be inferred
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
 
     for virtual_sensor in virtual_sensors:
 
-        sensors_latitude = np.array([sensor.coordinates[0] for sensor in Sensor.all() if sensor.type == 'physical'])
-        sensors_longitude = np.array([sensor.coordinates[1] for sensor in Sensor.all() if sensor.type == 'physical'])
-        sensors_measurement = np.array([sensor.measurement for sensor in Sensor.all() if sensor.type == 'physical'])
+        # Finding the k nearest neighbors of the virtual sensor
+        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY]
+
+        sensors_latitude = np.array([sensor.coordinates[0] for sensor in neighbor_sensors])
+        sensors_longitude = np.array([sensor.coordinates[1] for sensor in neighbor_sensors])
+        sensors_measurement = np.array([sensor.measurement for sensor in neighbor_sensors])
 
         dist = distance_matrix(sensors_latitude, sensors_longitude, virtual_sensor.coordinates[0], virtual_sensor.coordinates[1])
 

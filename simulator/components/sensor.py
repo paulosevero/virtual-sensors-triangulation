@@ -31,7 +31,7 @@ class Sensor(ObjectCollection):
             Sensor coordinates
 
         type : string (optional)
-            Sensor type ('physical' or 'logical')
+            Sensor type ('physical' or 'virtual')
 
         timestamp : datetime (optional)
             Timestamp for the sensor measurement
@@ -186,15 +186,15 @@ class Sensor(ObjectCollection):
         Parameters
         ==========
         physical_sensors : list
-            List of physical sensors used to triangulate the logical sensor
+            List of physical sensors used to triangulate the virtual sensor
 
-        logical_sensor : Sensor
-            Logical sensor whose measurement will be inferred
+        virtual_sensor : Sensor
+            Virtual sensor whose measurement will be inferred
 
         Returns
         =======
         auxiliary_sensors : float
-            Auxiliary sensors that will be used to estimate the measurement of the logical sensor
+            Auxiliary sensors that will be used to estimate the measurement of the virtual sensor
         """
 
         line_physensor1_physensor2 = line(physical_sensors[0].coordinates, physical_sensors[1].coordinates)
@@ -229,21 +229,21 @@ class Sensor(ObjectCollection):
 
 
     def calculate_measurement(self, physical_sensors, use_auxiliary_sensors=False, weighted=False):
-        """ Infers the value of a logical sensor by triangulating the
+        """ Infers the value of a virtual sensor by triangulating the
         value of existing physical sensors positioned across a given area.
 
         Parameters
         ==========
         physical_sensors : list
-            List of physical sensors used to triangulate the logical sensor
+            List of physical sensors used to triangulate the virtual sensor
 
-        logical_sensor : Sensor
-            Logical sensor whose measurement will be inferred
+        virtual_sensor : Sensor
+            Virtual sensor whose measurement will be inferred
 
         Returns
         =======
         inferred_measurement : float
-            Inferred measurement of the logical sensor
+            Inferred measurement of the virtual sensor
         """
 
         if use_auxiliary_sensors:

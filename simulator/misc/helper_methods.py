@@ -223,9 +223,9 @@ def show_triangle_info(virtual_sensor, triangle):
 
     # Auxiliary sensors within the triangle
     auxiliary_sensors = virtual_sensor.create_auxiliary_sensors(physical_sensors=triangle)
-    dist_auxsensor1_logical_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[0].coordinates), 4)
-    dist_auxsensor2_logical_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[1].coordinates), 4)
-    dist_auxsensor3_logical_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[2].coordinates), 4)
+    dist_auxsensor1_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[0].coordinates), 4)
+    dist_auxsensor2_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[1].coordinates), 4)
+    dist_auxsensor3_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[2].coordinates), 4)
 
     # General properties of the triangle
     area = triangle_area(triangle)
@@ -236,9 +236,9 @@ def show_triangle_info(virtual_sensor, triangle):
     mse = round(mean_squared_error([virtual_sensor.measurement], [inference]), 2)
 
     print(f'        Triangle = {sorted([sensor.id for sensor in triangle], key=lambda i: i)}')
-    print(f'            Aux. Sensor 1: {auxiliary_sensors[0].inferred_measurement} (dist={dist_auxsensor1_logical_sensor})')
-    print(f'            Aux. Sensor 2: {auxiliary_sensors[1].inferred_measurement} (dist={dist_auxsensor2_logical_sensor})')
-    print(f'            Aux. Sensor 3: {auxiliary_sensors[2].inferred_measurement} (dist={dist_auxsensor3_logical_sensor})')
+    print(f'            Aux. Sensor 1: {auxiliary_sensors[0].inferred_measurement} (dist={dist_auxsensor1_virtual_sensor})')
+    print(f'            Aux. Sensor 2: {auxiliary_sensors[1].inferred_measurement} (dist={dist_auxsensor2_virtual_sensor})')
+    print(f'            Aux. Sensor 3: {auxiliary_sensors[2].inferred_measurement} (dist={dist_auxsensor3_virtual_sensor})')
     print(f'            Average Distance from Virtual Sensor: {distance_from_virtual_sensor}')
     print(f'            Triangle Area: {area}')
     print(f'            Inference: {inference} (MSE={mse})')
@@ -258,7 +258,7 @@ def create_edges_and_draw_topo(triangles, figname='topology.jpg'):
 
     topology = triangles[0][0].topology
 
-    # Removing any links used to triangulate measurements of a logical sensor
+    # Removing any links used to triangulate measurements of a virtual sensor
     topology.remove_edges_from(list(topology.edges()))
 
     # Adding the edges that form the triangles
