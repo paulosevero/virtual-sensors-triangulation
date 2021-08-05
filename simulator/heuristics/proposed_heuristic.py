@@ -39,7 +39,8 @@ def proposed_heuristic():
         neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()
         # Checking if the virtual sensor is crossed by a line between two physical sensors. If so,
         # infers the sensor measurement with a simple linear interpolation between the two physical sensors
-        aligned_sensors = virtual_sensor.crossed_by_line(neighbor_sensors)
+        # aligned_sensors = virtual_sensor.crossed_by_line(neighbor_sensors[0:NEIGHBORS_TO_FORM_TRIANGLES])
+        aligned_sensors = virtual_sensor.crossed_by_line(neighbor_sensors[0:NEIGHBORS_TO_FORM_TRIANGLES])
 
         if aligned_sensors:
             inference = virtual_sensor.interpolate_measurement_aligned_sensors(sensor1=aligned_sensors[0], sensor2=aligned_sensors[1])

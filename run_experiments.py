@@ -3,7 +3,7 @@ import csv
 import os
 import re
 
-VERBOSE = 0
+VERBOSE = 1
 
 
 def run_simulation(dataset, metric, steps, virtual_sensors, k, alpha, heuristic_name):
@@ -29,25 +29,20 @@ def main():
     # General (fixed) experiment parameters
     dataset = 'inmet_2020_south'
     metrics = ['TEMPERATURA DO PONTO DE ORVALHO (°C)',
-               'PRECIPITAÇÃO TOTAL, HORÁRIO (mm)',
                'PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)',
-               'RADIACAO GLOBAL (Kj/m²)',
-               'UMIDADE RELATIVA DO AR, HORARIA (%)',
-               'VENTO, VELOCIDADE HORARIA (m/s)']
+               'UMIDADE RELATIVA DO AR, HORARIA (%)']
 
 
-    steps = 168  # Simulation time steps
-    virtual_sensors = 10  # Number of random virtual sensors whose values will be estimated
+    steps = 24  # Simulation time steps (e.g., 12, 24, 168, etc.)
+    virtual_sensors = 5  # Number of random virtual sensors whose values will be estimated
 
     # Specific experiment parameters (which are tested exhaustively)
     heuristics = [{'name': 'idw', 'k': True, 'alpha': False},
                   {'name': 'knn', 'k': True, 'alpha': False},
                   {'name': 'first_fit_proposal', 'k': True, 'alpha': False},
                   {'name': 'proposed_heuristic', 'k': True, 'alpha': True}]
-    k_values = range(1, 31)  # Number of nearest neighbor physical sensors that will be used to estimate the value of virtual sensors
-    k_values = [3]  # Number of nearest neighbor physical sensors that will be used to estimate the value of virtual sensors
+    k_values = [1, 2, 4, 8, 16, 32, 64]  # Number of nearest neighbor physical sensors that will be used to estimate the value of virtual sensors
     alpha_values = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30]  # Number of physical sensors that will be used to create triangles
-    alpha_values = [10]  # Number of physical sensors that will be used to create triangles
 
     # List that stores the experiments results
     results = []

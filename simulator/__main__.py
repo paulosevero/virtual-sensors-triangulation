@@ -7,11 +7,9 @@ python3 -B -m simulator -d "inmet_2020_rs" -m "TEMPERATURA DO PONTO DE ORVALHO (
 =========================
 == Metrics of Interest ==
 =========================
-PRECIPITAÇÃO TOTAL, HORÁRIO (mm)
 PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)
 TEMPERATURA DO PONTO DE ORVALHO (°C)
 UMIDADE RELATIVA DO AR, HORARIA (%)
-VENTO, VELOCIDADE HORARIA (m/s)
 """
 
 # Python Libraries
@@ -20,6 +18,9 @@ import argparse
 
 # General-purpose Simulator Modules
 from simulator.simulator import Simulator
+
+# Helper variable that dictates whether the simulator execution will be profiled by 'cProfile'
+PROFILING = False
 
 
 def main(dataset, steps, sensors, algorithm, sensors_to_form_triangles, neighbors, metric, output):
