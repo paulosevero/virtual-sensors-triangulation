@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "logical-sensors-triangulation"
+name = "virtual-sensors-triangulation"
 version = "0.1.0"
 description = ""
 authors = ["Paulo Severo"]
