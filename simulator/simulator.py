@@ -26,7 +26,7 @@ VERBOSITY = 1
 
 
 class Simulator:
-    """ This class allows the creation objects that
+    """This class allows the creation objects that
     control the whole life cycle of simulations.
     """
 
@@ -34,8 +34,8 @@ class Simulator:
     dataset = None
 
     @classmethod
-    def load_dataset(cls, target, metric, formatting='INMET-BR'):
-        """ Loads data from input files and creates a topology with sensor objects.
+    def load_dataset(cls, target, metric, formatting="INMET-BR"):
+        """Loads data from input files and creates a topology with sensor objects.
 
         target : string
             String representing a CSV file or a directory containing a list of CSV files
@@ -49,36 +49,40 @@ class Simulator:
 
         topo = Topology()
 
-        data = os.listdir('data')
+        data = os.listdir("data")
 
         if target not in data:
-            raise Exception('Invalid input target.')
+            raise Exception("Invalid input target.")
 
         else:
             # Checking if the passed argument represents a CSV file or a directory.
             # In case the argument points to a CSV file, loads the data directly.
             # Otherwise, it assumes the argument denotes a directory containing a
             # list of CSV files that will be merged as part of a single dataset.
-            if '.csv' in target:
-                print(f'CSV input file: {target}')
+            if ".csv" in target:
+                print(f"CSV input file: {target}")
 
-            elif '.json' in target:
-                print(f'JSON input file: {target}')
+            elif ".json" in target:
+                print(f"JSON input file: {target}")
 
-            elif formatting == 'INMET-BR':
+            elif formatting == "INMET-BR":
                 dataset = Simulator.parse_dataset_inmet_br(target=target, metric=metric)
             else:
-                raise Exception('Invalid dataset.')
+                raise Exception("Invalid dataset.")
 
             # Adding sensors to the NetworkX topology
             for data in dataset:
-                Sensor(coordinates=data['coordinates'], type='physical', timestamps=data['timestamps'],
-                       measurements=data['measurements'], alias=data['alias'])
-
+                Sensor(
+                    coordinates=data["coordinates"],
+                    type="physical",
+                    timestamps=data["timestamps"],
+                    measurements=data["measurements"],
+                    alias=data["alias"],
+                )
 
     @classmethod
     def parse_dataset_inmet_br(cls, target, metric):
-        """ Parse data following the format adopted by the
+        """Parse data following the format adopted by the
         Brazilian National Institute of Meteorology (INMET).
 
         Parameters
@@ -94,47 +98,50 @@ class Simulator:
 
         dataset = []
 
-        files = [file for file in os.listdir(f'data/{target}') if '.csv' in file.lower()]
+        files = [file for file in os.listdir(f"data/{target}") if ".csv" in file.lower()]
 
         for file in files:
 
             sensor = {}
 
-            with open(f'data/{target}/{file}', newline='', encoding='ISO-8859-1') as csvfile:
-                content = list(csv.reader(csvfile, delimiter=';', quotechar='|'))
+            with open(f"data/{target}/{file}", newline="", encoding="ISO-8859-1") as csvfile:
+                content = list(csv.reader(csvfile, delimiter=";", quotechar="|"))
 
                 # Parsing basic attributes
-                latitude = float(re.sub(',', '.', content[4][1])) if len(content[4][1]) > 0 else None
-                longitude = float(re.sub(',', '.', content[5][1])) if len(content[5][1]) > 0 else None
-                sensor['coordinates'] = (latitude, longitude)
-                sensor['alias'] = content[2][1]
+                latitude = float(re.sub(",", ".", content[4][1])) if len(content[4][1]) > 0 else None
+                longitude = float(re.sub(",", ".", content[5][1])) if len(content[5][1]) > 0 else None
+                sensor["coordinates"] = (latitude, longitude)
+                sensor["alias"] = content[2][1]
 
                 # Converting part of the CSV with data measurements to a pandas dataframe to ease manipulation
                 starting_row = 1449
                 ending_row = starting_row + 23
-                raw_measurements = pd.DataFrame(content[starting_row:starting_row + ending_row])
+                raw_measurements = pd.DataFrame(content[starting_row : starting_row + ending_row])
                 raw_measurements.columns = content[8]  # Defining the dataframe header with names of each column
 
                 # Removing rows with missing values
-                raw_measurements[metric].replace('', np.nan, inplace=True)
+                raw_measurements[metric].replace("", np.nan, inplace=True)
                 raw_measurements.dropna(subset=[metric], inplace=True)
 
                 # Parsing sensor measurements
-                sensor['measurements'] = [float(re.sub(',', '.', measurement)) for measurement in list(raw_measurements[metric])]
+                sensor["measurements"] = [
+                    float(re.sub(",", ".", measurement)) for measurement in list(raw_measurements[metric])
+                ]
 
                 # Parsing measurement timestamps
-                dates = list(raw_measurements['Data'])
-                hours = list(raw_measurements['Hora UTC'])
-                sensor['timestamps'] = [datetime.strptime(f'{dates[i]} {hours[i][0:4]}', '%Y/%m/%d %H%M') for i in range(0, len(dates))]
+                dates = list(raw_measurements["Data"])
+                hours = list(raw_measurements["Hora UTC"])
+                sensor["timestamps"] = [
+                    datetime.strptime(f"{dates[i]} {hours[i][0:4]}", "%Y/%m/%d %H%M") for i in range(0, len(dates))
+                ]
 
             dataset.append(sensor)
 
-        return(dataset)
-
+        return dataset
 
     @classmethod
-    def run(cls, steps, metric, algorithm, sensors, sensors_to_form_triangles, neighbors):
-        """ Starts the simulation.
+    def run(cls, steps, metric, algorithm, sensors, neighbors):
+        """Starts the simulation.
 
         Parameters
         ==========
@@ -150,27 +157,26 @@ class Simulator:
         sensors : int
             Number of virtual sensors whose measurements will be inferred
 
-        sensors_to_form_triangles : int
-            Number of sensors that can be used to form triangles
-
         neighbors : int
             Number of nearest neighbor sensors that can be used to estimate the value of a virtual sensor
         """
 
         # Creating a simulation environment
-        Simulator.environment = SimulationEnvironment(steps=int(steps), dataset=Simulator.dataset, metric=metric, heuristic=algorithm)
+        Simulator.environment = SimulationEnvironment(
+            steps=int(steps), dataset=Simulator.dataset, metric=metric, heuristic=algorithm
+        )
 
         # Informing the simulation environment what's the heuristic will be executed
         Simulator.environment.heuristic = algorithm
 
         # Starting the simulation
-        Simulator.environment.run(sensors=sensors, heuristic=Simulator.heuristic(algorithm=algorithm),
-                                  sensors_to_form_triangles=sensors_to_form_triangles, neighbors=neighbors)
-
+        Simulator.environment.run(
+            sensors=sensors, heuristic=Simulator.heuristic(algorithm=algorithm), neighbors=neighbors
+        )
 
     @classmethod
     def heuristic(cls, algorithm):
-        """ Checks if the heuristic informed by the user is valid
+        """Checks if the heuristic informed by the user is valid
         and passes it as a parameter to the simulation environment.
 
         Parameters
@@ -184,25 +190,24 @@ class Simulator:
             Function that accommodates the heuristic algorithm that will be executed
         """
 
-        if algorithm == 'proposed_heuristic':
-            Simulator.environment.heuristic = 'Proposed Heuristic'
-            return(proposed_heuristic)
-        elif algorithm == 'first_fit_proposal':
-            Simulator.environment.heuristic = 'Proposed Heuristic (Simplified Version)'
-            return(first_fit_proposal)
-        elif algorithm == 'knn':
-            Simulator.environment.heuristic = 'k-Nearest Neighbors'
-            return(knn)
-        elif algorithm == 'idw':
-            Simulator.environment.heuristic = 'Inverse Distance Weighting'
-            return(idw)
+        if algorithm == "proposed_heuristic":
+            Simulator.environment.heuristic = "Proposed Heuristic"
+            return proposed_heuristic
+        elif algorithm == "first_fit_proposal":
+            Simulator.environment.heuristic = "Proposed Heuristic (Simplified Version)"
+            return first_fit_proposal
+        elif algorithm == "knn":
+            Simulator.environment.heuristic = "k-Nearest Neighbors"
+            return knn
+        elif algorithm == "idw":
+            Simulator.environment.heuristic = "Inverse Distance Weighting"
+            return idw
         else:
-            raise Exception('Invalid heuristic algorithm.')
-
+            raise Exception("Invalid heuristic algorithm.")
 
     @classmethod
     def show_output(cls, output_file):
-        """ Exhibits the simulation results.
+        """Exhibits the simulation results.
 
         Parameters
         ==========
@@ -210,68 +215,82 @@ class Simulator:
             Name of the output file containing the simulation results
         """
 
-
         metrics_by_sensor = []
 
         for sensor in Simulator.environment.virtual_sensors:
 
             # Initializing a dictionary that will centralize all metrics from the sensor
-            sensor_metrics = {'sensor': sensor, 'real_measurements': [], 'inferences': [], 'timestamps': [], 'rmse': None, 'mae': None}
+            sensor_metrics = {
+                "sensor": sensor,
+                "real_measurements": [],
+                "inferences": [],
+                "timestamps": [],
+                "rmse": None,
+                "mae": None,
+            }
 
             # Collecting real measurements and inferences from the sensor in each step
             for step in Simulator.environment.metrics:
-                metrics = next(metrics for metrics in step['measurements'] if metrics['sensor'] == sensor.id)
-                sensor_metrics['timestamps'].append(metrics['timestamp'])
-                sensor_metrics['real_measurements'].append(metrics['real_measurement'])
-                sensor_metrics['inferences'].append(metrics['inference'])
+                metrics = next(metrics for metrics in step["measurements"] if metrics["sensor"] == sensor.id)
+                sensor_metrics["timestamps"].append(metrics["timestamp"])
+                sensor_metrics["real_measurements"].append(metrics["real_measurement"])
+                sensor_metrics["inferences"].append(metrics["inference"])
 
             # Calculating accuracy metrics for the sensor inferences
-            sensor_metrics['rmse'] = mean_squared_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'], squared=False)
-            sensor_metrics['mae'] = mean_absolute_error(sensor_metrics['real_measurements'], sensor_metrics['inferences'])
+            sensor_metrics["rmse"] = mean_squared_error(
+                sensor_metrics["real_measurements"],
+                sensor_metrics["inferences"],
+                squared=False,
+            )
+            sensor_metrics["mae"] = mean_absolute_error(
+                sensor_metrics["real_measurements"], sensor_metrics["inferences"]
+            )
 
             # Adding sensor metrics to the list of metrics of all sensors
             metrics_by_sensor.append(sensor_metrics)
-
 
         list_of_rmse_results = []
         list_of_mae_results = []
 
         if VERBOSITY >= 2:
-            print('=== METRICS BY SENSOR ===')
+            print("=== METRICS BY SENSOR ===")
         for sensor_metrics in metrics_by_sensor:
             if VERBOSITY >= 2:
                 print(f'Sensor_{sensor_metrics["sensor"]}')
-                print(f'    Real Measurements ({len(sensor_metrics["real_measurements"])}): {sensor_metrics["real_measurements"]}')
-                print(f'    Inferences ({len(sensor_metrics["inferences"])}): {[round(inference, 1) for inference in sensor_metrics["inferences"]]}')
+                print(
+                    f'    Real Measurements ({len(sensor_metrics["real_measurements"])}): {sensor_metrics["real_measurements"]}'
+                )
+                print(
+                    f'    Inferences ({len(sensor_metrics["inferences"])}): {[round(inference, 1) for inference in sensor_metrics["inferences"]]}'
+                )
                 print(f'    Root Mean Squared Error (RMSE): {sensor_metrics["mse"]}')
                 print(f'    Mean Absolute Error (MAE): {sensor_metrics["mae"]}')
 
-            list_of_rmse_results.append(sensor_metrics['rmse'])
-            list_of_mae_results.append(sensor_metrics['mae'])
+            list_of_rmse_results.append(sensor_metrics["rmse"])
+            list_of_mae_results.append(sensor_metrics["mae"])
 
         stdev_rmse = statistics.stdev(list_of_rmse_results)
         stdev_mae = statistics.stdev(list_of_mae_results)
         rmse = sum(list_of_rmse_results) / len(list_of_rmse_results)
         mae = sum(list_of_mae_results) / len(list_of_mae_results)
 
-
         if VERBOSITY >= 1:
-            print('=== OVERALL RESULTS ===')
-            print(f'Heuristic: {Simulator.environment.heuristic}')
-            print(f'Metric: {Simulator.environment.metric}')
-            print(f'Sensors: {[sensor.id for sensor in Simulator.environment.virtual_sensors]}')
+            print("=== OVERALL RESULTS ===")
+            print(f"Heuristic: {Simulator.environment.heuristic}")
+            print(f"Metric: {Simulator.environment.metric}")
+            print(f"Sensors: {[sensor.id for sensor in Simulator.environment.virtual_sensors]}")
 
             if VERBOSITY >= 2:
-                print('Raw Results:')
-                print(f'    RMSE: {list_of_rmse_results}')
-                print(f'    MAE: {list_of_mae_results}')
+                print("Raw Results:")
+                print(f"    RMSE: {list_of_rmse_results}")
+                print(f"    MAE: {list_of_mae_results}")
 
-            print('Summary:')
-            print(f'    Root Mean Squared Error (RMSE): {rmse}')
-            print(f'    Mean Absolute Error (MAE): {mae}')
+            print("Summary:")
+            print(f"    Root Mean Squared Error (RMSE): {rmse}")
+            print(f"    Mean Absolute Error (MAE): {mae}")
 
             if VERBOSITY >= 2:
-                print(f'    Standard Deviation RMSE: {stdev_rmse}')
-                print(f'    Standard Deviation MAE: {stdev_mae}')
+                print(f"    Standard Deviation RMSE: {stdev_rmse}")
+                print(f"    Standard Deviation MAE: {stdev_mae}")
 
-            Topology.first().draw(showgui=False, savefig=False)
+            Topology.first().draw(showgui=False, savefig=True)

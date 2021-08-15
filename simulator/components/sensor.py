@@ -22,8 +22,8 @@ class Sensor(ObjectCollection):
     # Class attribute that allows the class to use ObjectCollection methods
     instances = []
 
-    def __init__(self, coordinates=None, type='physical', timestamps=[], measurements=[], alias=''):
-        """ Creates a new sensor.
+    def __init__(self, coordinates=None, type="physical", timestamps=[], measurements=[], alias=""):
+        """Creates a new sensor.
 
         Parameters
         ==========
@@ -69,18 +69,17 @@ class Sensor(ObjectCollection):
         # Adding the new object to the list of instances of its class
         Sensor.instances.append(self)
 
-
     def __str__(self):
-        """ Dictates the visual representation of sensors when they're printed.
-        """
+        """Dictates the visual representation of sensors when they're printed."""
 
-        return(f'Sensor_{self.id}. Type: {self.type}. Alias: {self.alias}. ' +
-               f'Coordinates: {self.coordinates}. Value: {self.measurement}')
-
+        return (
+            f"Sensor_{self.id}. Type: {self.type}. Alias: {self.alias}. "
+            + f"Coordinates: {self.coordinates}. Value: {self.measurement}"
+        )
 
     @classmethod
     def create_delaunay_triangles(cls, physical_sensors, create_edges=False):
-        """ Creates a mesh of triangles using the delaunay algorithm.
+        """Creates a mesh of triangles using the delaunay algorithm.
 
         Parameters
         ==========
@@ -96,8 +95,10 @@ class Sensor(ObjectCollection):
         topo = Topology.first()
 
         sensors = [sensor.coordinates for sensor in physical_sensors]
-        triangles = [[Sensor.find_by(attribute_name='coordinates', attribute_value=sensors[i])[0] for i in list(triangle)]
-                     for triangle in Delaunay(sensors).simplices]
+        triangles = [
+            [Sensor.find_by(attribute_name="coordinates", attribute_value=sensors[i])[0] for i in list(triangle)]
+            for triangle in Delaunay(sensors).simplices
+        ]
 
         if create_edges:
             for triangle in triangles:
@@ -105,42 +106,38 @@ class Sensor(ObjectCollection):
                 for i in range(0, 2):
                     topo.add_edge(triangle[i], triangle[i + 1])
 
-        return(triangles)
-
+        return triangles
 
     def covered_by_triangles_mesh(self, sensors):
-        """
-        """
+        """ """
 
         if len(sensors) > 2:
             triangles = Sensor.create_delaunay_triangles(sensors)
 
             for triangle in triangles:
                 if self.is_inside_triangle(triangle=triangle):
-                    print(f'Sensor_{self.id} is inside triangle {[sensor.id for sensor in triangle]}')
-                    return(True)
+                    print(f"Sensor_{self.id} is inside triangle {[sensor.id for sensor in triangle]}")
+                    return True
                 else:
-                    print(f'Sensor_{self.id} is NOT inside triangle {[sensor.id for sensor in triangle]}')
+                    print(f"Sensor_{self.id} is NOT inside triangle {[sensor.id for sensor in triangle]}")
 
-        return(False)
-
+        return False
 
     def find_neighbors_sorted_by_distance(self):
-        """ Finds all neighbor sensors sorted by their distance.
+        """Finds all neighbor sensors sorted by their distance.
 
         Returns
         =======
         neighbors : list
             List of sensors sorted by their distance from 'self'
         """
-        sensors = [sensor for sensor in Sensor.all() if sensor != self and sensor.type == 'physical']
+        sensors = [sensor for sensor in Sensor.all() if sensor != self and sensor.type == "physical"]
         neighbors = sorted(sensors, key=lambda s: distance.euclidean(self.coordinates, s.coordinates))
 
-        return(neighbors)
-
+        return neighbors
 
     def get_encoded_position(self):
-        """ Encodes sensor's coordinates into a single number [1].
+        """Encodes sensor's coordinates into a single number [1].
 
         Returns
         =======
@@ -151,11 +148,10 @@ class Sensor(ObjectCollection):
         """
 
         pos = (self.coordinates[0] + 90) * 180 + self.coordinates[1]
-        return(pos)
-
+        return pos
 
     def interpolate_measurement_aligned_sensors(self, sensor1, sensor2):
-        """ Infers the measurement of a sensor based on
+        """Infers the measurement of a sensor based on
         the measurements of two other inlined sensors.
 
         Parameters
@@ -176,11 +172,10 @@ class Sensor(ObjectCollection):
         interpolation = scipy.interpolate.interp1d(positions, measurements)
 
         inferred_measurement = float(interpolation(self.get_encoded_position()))
-        return(inferred_measurement)
-
+        return inferred_measurement
 
     def create_auxiliary_sensors(self, physical_sensors):
-        """ Creates a set of auxiliary sensors that will be
+        """Creates a set of auxiliary sensors that will be
         used to estimate the measurement of a virtual sensor.
 
         Parameters
@@ -209,27 +204,28 @@ class Sensor(ObjectCollection):
         intersection_physensor1_physensor3 = intersection(line_physensor1_physensor3, line_with_physensor2)
         intersection_physensor2_physensor3 = intersection(line_physensor2_physensor3, line_with_physensor1)
 
-        aux_sensor1 = Sensor(coordinates=intersection_physensor1_physensor2, type='auxiliary')
-        aux_sensor2 = Sensor(coordinates=intersection_physensor1_physensor3, type='auxiliary')
-        aux_sensor3 = Sensor(coordinates=intersection_physensor2_physensor3, type='auxiliary')
+        aux_sensor1 = Sensor(coordinates=intersection_physensor1_physensor2, type="auxiliary")
+        aux_sensor2 = Sensor(coordinates=intersection_physensor1_physensor3, type="auxiliary")
+        aux_sensor3 = Sensor(coordinates=intersection_physensor2_physensor3, type="auxiliary")
 
         # https://stackoverflow.com/questions/8285599/is-there-a-formula-to-change-a-latitude-and-longitude-into-a-single-number
         # https://stackoverflow.com/questions/4637031/geospatial-indexing-with-redis-sinatra-for-a-facebook-app
-        aux_sensor1.inferred_measurement = aux_sensor1.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
-                                                                                               sensor2=physical_sensors[1])
+        aux_sensor1.inferred_measurement = aux_sensor1.interpolate_measurement_aligned_sensors(
+            sensor1=physical_sensors[0], sensor2=physical_sensors[1]
+        )
 
-        aux_sensor2.inferred_measurement = aux_sensor2.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[0],
-                                                                                               sensor2=physical_sensors[2])
+        aux_sensor2.inferred_measurement = aux_sensor2.interpolate_measurement_aligned_sensors(
+            sensor1=physical_sensors[0], sensor2=physical_sensors[2]
+        )
 
-        aux_sensor3.inferred_measurement = aux_sensor3.interpolate_measurement_aligned_sensors(sensor1=physical_sensors[1],
-                                                                                               sensor2=physical_sensors[2])
+        aux_sensor3.inferred_measurement = aux_sensor3.interpolate_measurement_aligned_sensors(
+            sensor1=physical_sensors[1], sensor2=physical_sensors[2]
+        )
 
-
-        return([aux_sensor1, aux_sensor2, aux_sensor3])
-
+        return [aux_sensor1, aux_sensor2, aux_sensor3]
 
     def calculate_measurement(self, physical_sensors, use_auxiliary_sensors=False, weighted=False):
-        """ Infers the value of a virtual sensor by triangulating the
+        """Infers the value of a virtual sensor by triangulating the
         value of existing physical sensors positioned across a given area.
 
         Parameters
@@ -248,15 +244,17 @@ class Sensor(ObjectCollection):
 
         if use_auxiliary_sensors:
             auxiliary_sensors = self.create_auxiliary_sensors(physical_sensors=physical_sensors)
-            sensors = sorted(auxiliary_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates))
+            sensors = sorted(
+                auxiliary_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates)
+            )
             measurements = [sensor.inferred_measurement for sensor in sensors]
         else:
-            sensors = sorted(physical_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates))
+            sensors = sorted(
+                physical_sensors, key=lambda sensor: distance.euclidean(self.coordinates, sensor.coordinates)
+            )
             measurements = [sensor.measurement for sensor in sensors]
 
-
         weights = [1 / distance.euclidean(self.coordinates, sensor.coordinates) for sensor in sensors]
-
 
         if weighted:
             product_measurements_weights = [measurements[i] * weights[i] for i in range(len(sensors))]
@@ -264,12 +262,10 @@ class Sensor(ObjectCollection):
         else:
             inference = sum(measurements) / len(measurements)
 
-
-        return(inference)
-
+        return inference
 
     def is_inside_line(self, sensor1, sensor2):
-        """ Checks if sensor is inside a line.
+        """Checks if sensor is inside a line.
 
         Parameters
         ==========
@@ -284,12 +280,12 @@ class Sensor(ObjectCollection):
         encoded_position2 = self.get_encoded_position()
         encoded_position3 = sensor2.get_encoded_position()
 
-        return((encoded_position2 > encoded_position1 and encoded_position2 < encoded_position3) or
-               (encoded_position2 < encoded_position1 and encoded_position2 > encoded_position3))
-
+        return (encoded_position2 > encoded_position1 and encoded_position2 < encoded_position3) or (
+            encoded_position2 < encoded_position1 and encoded_position2 > encoded_position3
+        )
 
     def crossed_by_line(self, sensors):
-        """ Checks if sensor is crossed by a line formed by two physical sensors.
+        """Checks if sensor is crossed by a line formed by two physical sensors.
 
         Parameters
         ==========
@@ -306,20 +302,20 @@ class Sensor(ObjectCollection):
         for pair in combinations:
 
             # Calculating the matrix determinant to check if the virtual sensor is aligned with two physical sensors
-            determinant = matrix_determinant(coord1=pair[0].coordinates, coord2=self.coordinates, coord3=pair[1].coordinates)
+            determinant = matrix_determinant(
+                coord1=pair[0].coordinates, coord2=self.coordinates, coord3=pair[1].coordinates
+            )
 
             # Checking if the sensor is inside the line formed by the two physical sensors
             inside_line = self.is_inside_line(sensor1=pair[0], sensor2=pair[1])
 
             if determinant == 0 and inside_line:
-                return(pair)
+                return pair
 
-        return(False)
-
+        return False
 
     def is_inside_triangle(self, triangle):
-        """
-        """
+        """ """
 
         sensor1 = triangle[0]
         sensor2 = triangle[1]
@@ -341,21 +337,23 @@ class Sensor(ObjectCollection):
         # the minimum precision instead of the maximum to avoid misleading calculations of whether
         # a point lies inside the triangle of not (in case the coordinates of a sensor has a higher precision
         # than the coordinates of other sensor that comprises the triangle).
-        triangle_coordinates_precision = min([min([str(sensor.coordinates[0])[::-1].find('.'),
-                                             str(sensor.coordinates[1])[::-1].find('.')]) for sensor in triangle])
+        triangle_coordinates_precision = min(
+            [
+                min([str(sensor.coordinates[0])[::-1].find("."), str(sensor.coordinates[1])[::-1].find(".")])
+                for sensor in triangle
+            ]
+        )
 
         # Check if sum of A1, A2 and A3 is same as A. We are rounding both
         # float values to 'triangle_coordinates_precision' decimal places
-        if(round(A, triangle_coordinates_precision) == round(A1 + A2 + A3, triangle_coordinates_precision)):
-            return(True)
+        if round(A, triangle_coordinates_precision) == round(A1 + A2 + A3, triangle_coordinates_precision):
+            return True
         else:
-            return(False)
-
+            return False
 
     @classmethod
     def get_triangle_centroid(cls, triangle):
-        """
-        """
+        """ """
 
         x1 = triangle[0].coordinates[0]
         y1 = triangle[0].coordinates[1]
@@ -369,11 +367,10 @@ class Sensor(ObjectCollection):
         centroid_x = round((x1 + x2 + x3) / 3, 2)
         centroid_y = round((y1 + y2 + y3) / 3, 2)
 
-        return((centroid_x, centroid_y))
-
+        return (centroid_x, centroid_y)
 
     def can_be_triangulated(self, sensors):
-        """ Creates a mesh of triangles using the Delaunay algorithm and checks if triangle (self)
+        """Creates a mesh of triangles using the Delaunay algorithm and checks if triangle (self)
         is covered by any of thee created triangles in such a way its value could be triangulated.
 
         Parameters
@@ -399,7 +396,7 @@ class Sensor(ObjectCollection):
                     triangles_that_cover_the_sensor.append(triangle)
 
             if len(triangles_that_cover_the_sensor) > 0:
-                return(triangles_that_cover_the_sensor)
+                return triangles_that_cover_the_sensor
 
         else:
-            return(False)
+            return False

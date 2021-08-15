@@ -12,18 +12,15 @@ class Topology(ObjectCollection, nx.Graph):
     instances = []
 
     def __init__(self):
-        """ Creates a NetworkX topology
-        """
+        """Creates a NetworkX topology"""
 
         nx.Graph.__init__(self)
 
         # Adding the new object to the list of instances of its class
         Topology.instances.append(self)
 
-
-    def draw(self, showgui=True, savefig=True, figname='topology.jpg', dpi=200):
-        """ Draws the network topology.
-        """
+    def draw(self, showgui=True, savefig=True, figname="topology.jpg", dpi=200):
+        """Draws the network topology."""
 
         fig = plt.figure()
 
@@ -37,15 +34,23 @@ class Topology(ObjectCollection, nx.Graph):
             pos[sensor] = (sensor.coordinates[1], sensor.coordinates[0])
             labels[sensor] = sensor.id
 
-            if sensor.type == 'physical':
-                colors.append('black')
-            elif sensor.type == 'virtual':
-                colors.append('red')
-            elif sensor.type == 'auxiliary':
-                colors.append('green')
+            if sensor.type == "physical":
+                colors.append("black")
+            elif sensor.type == "virtual":
+                colors.append("red")
+            elif sensor.type == "auxiliary":
+                colors.append("green")
 
-        nx.draw(self, pos=pos, labels=labels, node_size=60, font_size=4,
-                font_color='white', node_color=colors, font_weight='bold')
+        nx.draw(
+            self,
+            pos=pos,
+            labels=labels,
+            node_size=60,
+            font_size=4,
+            font_color="white",
+            node_color=colors,
+            font_weight="bold",
+        )
 
         if savefig:
             fig.savefig(figname, dpi=dpi)

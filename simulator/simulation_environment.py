@@ -10,7 +10,7 @@ from simulator.components.topology import Topology
 
 
 class SimulationEnvironment(ObjectCollection):
-    """ This class allows the creation objects that
+    """This class allows the creation objects that
     control the whole life cycle of simulations.
     """
 
@@ -18,7 +18,7 @@ class SimulationEnvironment(ObjectCollection):
     instances = []
 
     def __init__(self, steps, dataset, metric, heuristic):
-        """ Initializes the simulation object.
+        """Initializes the simulation object.
 
         Parameters
         ==========
@@ -60,9 +60,8 @@ class SimulationEnvironment(ObjectCollection):
         # Adding the new object to the list of instances of its class
         SimulationEnvironment.instances.append(self)
 
-
-    def run(self, sensors, heuristic, sensors_to_form_triangles, neighbors):
-        """ Triggers the set of events that ocurr during the simulation.
+    def run(self, sensors, heuristic, neighbors):
+        """Triggers the set of events that ocurr during the simulation.
 
         Parameters
         ==========
@@ -72,20 +71,15 @@ class SimulationEnvironment(ObjectCollection):
         algorithm : string
             Heuristic algorithm that will be executed
 
-        sensors_to_form_triangles : int
-            Number of sensors that can be used to form triangles
-
         neighbors : int
             Number of nearest neighbor sensors that can be used to estimate the value of a virtual sensor
         """
 
         # Picking 'n' virtual sensors whose measurements will be estimated
-        self.virtual_sensors = random.sample([sensor for sensor in Sensor.all() if sensor.type == 'physical'], sensors)
+        self.virtual_sensors = random.sample([sensor for sensor in Sensor.all() if sensor.type == "physical"], sensors)
         for sensor in self.virtual_sensors:
-            sensor.type = 'virtual'
+            sensor.type = "virtual"
 
-        # Defining the number of physical sensors that can be used to form triangles and estimate the value of a virtual sensor
-        self.sensors_to_form_triangles = sensors_to_form_triangles
         self.neighbors = neighbors
 
         # The simulation goes on while the stopping criteria is not met
@@ -103,33 +97,27 @@ class SimulationEnvironment(ObjectCollection):
             self.collect_metrics()
             self.current_step += 1
 
-
     def update_system_state(self):
-        """
-        """
+        """ """
 
         # Updating sensors measurements and their timestamps
-        for sensor in [sensor for sensor in Sensor.all() if sensor.type == 'physical' or sensor.type == 'virtual']:
+        for sensor in [sensor for sensor in Sensor.all() if sensor.type == "physical" or sensor.type == "virtual"]:
             sensor.measurement = sensor.measurements[self.current_step - 1]
             sensor.timestamp = sensor.timestamps[self.current_step - 1]
 
-
     def clean_environment(self):
-        """
-        """
+        """ """
 
         # Removing auxiliary sensors and any links used to triangulate measurements of a virtual sensor
         Topology.first().remove_edges_from(list(Topology.first().edges()))
 
-        auxiliary_sensors = [sensor for sensor in Sensor.all() if sensor.type == 'auxiliary']
+        auxiliary_sensors = [sensor for sensor in Sensor.all() if sensor.type == "auxiliary"]
 
-        Sensor.instances = [sensor for sensor in Sensor.all() if sensor.type == 'physical' or sensor.type == 'virtual']
+        Sensor.instances = [sensor for sensor in Sensor.all() if sensor.type == "physical" or sensor.type == "virtual"]
         Topology.first().remove_nodes_from(auxiliary_sensors)
 
-
     def collect_metrics(self):
-        """ Stores relevant events that occur during the simulation.
-        """
+        """Stores relevant events that occur during the simulation."""
 
         measurements = []
 
@@ -137,10 +125,15 @@ class SimulationEnvironment(ObjectCollection):
 
             if sensor.inferred_measurement is not None:
 
-                measurements.append({'sensor': sensor.id, 'timestamp': sensor.timestamp,
-                                     'real_measurement': sensor.measurement,
-                                     'inference': sensor.inferred_measurement})
+                measurements.append(
+                    {
+                        "sensor": sensor.id,
+                        "timestamp": sensor.timestamp,
+                        "real_measurement": sensor.measurement,
+                        "inference": sensor.inferred_measurement,
+                    }
+                )
 
-        step_metrics = {'step': self.current_step, 'measurements': measurements}
+        step_metrics = {"step": self.current_step, "measurements": measurements}
 
         self.metrics.append(step_metrics)

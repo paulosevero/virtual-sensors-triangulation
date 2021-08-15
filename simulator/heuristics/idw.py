@@ -6,7 +6,7 @@ from simulator.simulation_environment import SimulationEnvironment
 
 
 def distance_matrix(x0, y0, x1, y1):
-    """ Calculates the distance matrix between two locations.
+    """Calculates the distance matrix between two locations.
 
     Parameters
     ==========
@@ -34,11 +34,11 @@ def distance_matrix(x0, y0, x1, y1):
     d1 = np.subtract.outer(obs[:, 1], interp[:, 1])
 
     dist_matrix = np.hypot(d0, d1)
-    return(dist_matrix)
+    return dist_matrix
 
 
 def idw():
-    """ The Inverse Distance Weighting (IDW) [1] calculates the value of unknown points using a weighted
+    """The Inverse Distance Weighting (IDW) [1] calculates the value of unknown points using a weighted
     mean of the values available at the known points. The weight of known points is given by the inverse
     of their distance from the unknown point (the smallest the distance the higher the weight).
 
@@ -50,8 +50,9 @@ def idw():
     NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
 
     # Adding the number of neighbors (given by the 'k' parameter) to the heuristic's name to ease post-simulation analysis
-    SimulationEnvironment.first().heuristic = f'Inverse Distance Weighting (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})'
-
+    SimulationEnvironment.first().heuristic = (
+        f"Inverse Distance Weighting (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})"
+    )
 
     # Gathering the list of virtual sensors whose measurements need to be inferred
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
@@ -59,13 +60,17 @@ def idw():
     for virtual_sensor in virtual_sensors:
 
         # Finding the k nearest neighbors of the virtual sensor
-        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY]
+        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[
+            0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY
+        ]
 
         sensors_latitude = np.array([sensor.coordinates[0] for sensor in neighbor_sensors])
         sensors_longitude = np.array([sensor.coordinates[1] for sensor in neighbor_sensors])
         sensors_measurement = np.array([sensor.measurement for sensor in neighbor_sensors])
 
-        dist = distance_matrix(sensors_latitude, sensors_longitude, virtual_sensor.coordinates[0], virtual_sensor.coordinates[1])
+        dist = distance_matrix(
+            sensors_latitude, sensors_longitude, virtual_sensor.coordinates[0], virtual_sensor.coordinates[1]
+        )
 
         # Defining weights
         weights = 1.0 / dist

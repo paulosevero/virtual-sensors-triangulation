@@ -23,8 +23,16 @@ from simulator.simulator import Simulator
 PROFILING = False
 
 
-def main(dataset, steps, sensors, algorithm, sensors_to_form_triangles, neighbors, metric, output):
-    """ Executes the simulation.
+def main(
+    dataset,
+    steps,
+    sensors,
+    algorithm,
+    neighbors,
+    metric,
+    output,
+):
+    """Executes the simulation.
 
     Parameters
     ==========
@@ -40,9 +48,6 @@ def main(dataset, steps, sensors, algorithm, sensors_to_form_triangles, neighbor
     algorithm : string
         Heuristic algorithm that will be executed
 
-    sensors_to_form_triangles : int
-        Number of sensors that can be used to form triangles
-
     neighbors : int
         Number of nearest neighbor sensors that can be used to estimate the value of a virtual sensor
 
@@ -54,28 +59,46 @@ def main(dataset, steps, sensors, algorithm, sensors_to_form_triangles, neighbor
     """
 
     Simulator.load_dataset(target=dataset, metric=metric)
-    Simulator.run(steps=steps, metric=metric, algorithm=algorithm, sensors_to_form_triangles=sensors_to_form_triangles,
-                  neighbors=neighbors, sensors=sensors)
+    Simulator.run(
+        steps=steps,
+        metric=metric,
+        algorithm=algorithm,
+        neighbors=neighbors,
+        sensors=sensors,
+    )
     Simulator.show_output(output_file=output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Defining a seed value to enable reproducibility in case any stochastic behavior occurs during simulation
     random.seed(1)
 
     # Parsing named arguments from the command line
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--dataset', '-d', help='Dataset file or directory containing list of dataset files')
-    parser.add_argument('--simulation-steps', '-s', help='Number of simulation steps')
-    parser.add_argument('--metric', '-m', help='Metric to be inferred')
-    parser.add_argument('--number-of-sensors', '-n', help='Number of virtual sensors whose measurements will be inferred')
-    parser.add_argument('--sensors-to-form-triangles', '-t', help='Number of physical sensors that can be used to form triangles', default=0)
-    parser.add_argument('--number-of-neighbors', '-k', help='Number of nearest physical sensors that can be used to estimate the value of a virtual sensor', default=0)
-    parser.add_argument('--algorithm', '-a', help='Heuristic algorithm to be executed')
-    parser.add_argument('--output', '-o', help='Output file name', default='topology.png')
+    parser.add_argument("--dataset", "-d", help="Dataset file or directory containing list of dataset files")
+    parser.add_argument("--simulation-steps", "-s", help="Number of simulation steps")
+    parser.add_argument("--metric", "-m", help="Metric to be inferred")
+    parser.add_argument(
+        "--number-of-sensors", "-n", help="Number of virtual sensors whose measurements will be inferred"
+    )
+    parser.add_argument(
+        "--number-of-neighbors",
+        "-k",
+        help="Number of nearest physical sensors that can be used to estimate the value of a virtual sensor",
+        default=0,
+    )
+    parser.add_argument("--algorithm", "-a", help="Heuristic algorithm to be executed")
+    parser.add_argument("--output", "-o", help="Output file name", default="topology.png")
     args = parser.parse_args()
 
     # Calling the main method
-    main(dataset=args.dataset, steps=args.simulation_steps, sensors=int(args.number_of_sensors), output=args.output, metric=args.metric,
-         sensors_to_form_triangles=int(args.sensors_to_form_triangles), neighbors=int(args.number_of_neighbors), algorithm=args.algorithm)
+    main(
+        dataset=args.dataset,
+        steps=args.simulation_steps,
+        sensors=int(args.number_of_sensors),
+        output=args.output,
+        metric=args.metric,
+        neighbors=int(args.number_of_neighbors),
+        algorithm=args.algorithm,
+    )

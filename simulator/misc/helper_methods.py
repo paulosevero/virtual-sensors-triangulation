@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 
 
 def line(coordinates_a, coordinates_b):
-    """ Creates a line between two given coordinates.
+    """Creates a line between two given coordinates.
 
     Parameters
     ==========
@@ -24,11 +24,11 @@ def line(coordinates_a, coordinates_b):
     b = coordinates_b[0] - coordinates_a[0]
     c = coordinates_a[0] * coordinates_b[1] - coordinates_b[0] * coordinates_a[1]
 
-    return(a, b, -c)
+    return (a, b, -c)
 
 
 def intersection(line1, line2):
-    """ Finds the intersection between two lines.
+    """Finds the intersection between two lines.
 
     Parameters
     ==========
@@ -50,13 +50,13 @@ def intersection(line1, line2):
     if d != 0:
         x = dx / d
         y = dy / d
-        return(x, y)
+        return (x, y)
     else:
-        return(False)
+        return False
 
 
 def triangle_area(triangle):
-    """ Calculates the area of a triangle.
+    """Calculates the area of a triangle.
 
     Parameters
     ==========
@@ -77,11 +77,11 @@ def triangle_area(triangle):
     y3 = triangle[2].coordinates[1]
 
     area = abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0)
-    return(area)
+    return area
 
 
 def matrix_determinant(coord1, coord2, coord3):
-    """ Calculates the determinant of a matrix.
+    """Calculates the determinant of a matrix.
 
     Parameters
     ==========
@@ -112,11 +112,11 @@ def matrix_determinant(coord1, coord2, coord3):
 
     determinant = d1 - d2
 
-    return(determinant)
+    return determinant
 
 
 def triangle_angles(triangle):
-    """ Calculates the angles of a given triangle.
+    """Calculates the angles of a given triangle.
 
     Parameters
     ==========
@@ -135,35 +135,35 @@ def triangle_angles(triangle):
 
     # Square of lengths (a2, b2, c2)
     def length_square(X, Y):
-        xDiff = X[0] - Y[0] 
-        yDiff = X[1] - Y[1] 
-        return(xDiff ** 2 + yDiff ** 2)
+        xDiff = X[0] - Y[0]
+        yDiff = X[1] - Y[1]
+        return xDiff ** 2 + yDiff ** 2
 
-    a2 = length_square(B, C) 
-    b2 = length_square(A, C) 
-    c2 = length_square(A, B) 
-  
-    # length of sides be a, b, c 
+    a2 = length_square(B, C)
+    b2 = length_square(A, C)
+    c2 = length_square(A, B)
+
+    # length of sides be a, b, c
     a = math.sqrt(a2)
     b = math.sqrt(b2)
     c = math.sqrt(c2)
-  
-    # From Cosine law 
+
+    # From Cosine law
     alpha = math.acos((b2 + c2 - a2) / (2 * b * c))
     beta = math.acos((a2 + c2 - b2) / (2 * a * c))
     gamma = math.acos((a2 + b2 - c2) / (2 * a * b))
-  
-    # Converting to degree 
+
+    # Converting to degree
     alpha = alpha * 180 / math.pi
     beta = beta * 180 / math.pi
     gamma = gamma * 180 / math.pi
 
     angles = [alpha, beta, gamma]
-    return(angles)
+    return angles
 
 
 def triangle_weight(virtual_sensor, triangle):
-    """ Cost function that helps the proposed heuristic to choose the best triangle
+    """Cost function that helps the proposed heuristic to choose the best triangle
     to estimate the value of a virtual sensor. The cost (i.e., weight) of a triangle
     is given by the average distance of its sensors to the virtual sensor.
 
@@ -181,18 +181,19 @@ def triangle_weight(virtual_sensor, triangle):
         Weight (or cost) of 'triangle' that denotes how suitable it is to estimate the value of 'virtual_sensor'
     """
 
-
     auxiliary_sensors = virtual_sensor.create_auxiliary_sensors(physical_sensors=triangle)
 
-    distance_from_virtual_sensor = [distance.euclidean(virtual_sensor.coordinates, sensor.coordinates) for sensor in auxiliary_sensors]
+    distance_from_virtual_sensor = [
+        distance.euclidean(virtual_sensor.coordinates, sensor.coordinates) for sensor in auxiliary_sensors
+    ]
 
     weight = statistics.mean(distance_from_virtual_sensor)
 
-    return(weight)
+    return weight
 
 
 def is_well_conditioned_triangle(triangle):
-    """ Checks if a group of physical sensors form a well-conditioned triangle.
+    """Checks if a group of physical sensors form a well-conditioned triangle.
 
     Parameters
     ==========
@@ -206,11 +207,11 @@ def is_well_conditioned_triangle(triangle):
     """
 
     angles = triangle_angles(triangle)
-    return(min(angles) >= 30 and max(angles) <= 120)
+    return min(angles) >= 30 and max(angles) <= 120
 
 
 def show_triangle_info(virtual_sensor, triangle):
-    """ Prints out the details of a given triangle.
+    """Prints out the details of a given triangle.
 
     Parameters
     ==========
@@ -223,9 +224,15 @@ def show_triangle_info(virtual_sensor, triangle):
 
     # Auxiliary sensors within the triangle
     auxiliary_sensors = virtual_sensor.create_auxiliary_sensors(physical_sensors=triangle)
-    dist_auxsensor1_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[0].coordinates), 4)
-    dist_auxsensor2_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[1].coordinates), 4)
-    dist_auxsensor3_virtual_sensor = round(distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[2].coordinates), 4)
+    dist_auxsensor1_virtual_sensor = round(
+        distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[0].coordinates), 4
+    )
+    dist_auxsensor2_virtual_sensor = round(
+        distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[1].coordinates), 4
+    )
+    dist_auxsensor3_virtual_sensor = round(
+        distance.euclidean(virtual_sensor.coordinates, auxiliary_sensors[2].coordinates), 4
+    )
 
     # General properties of the triangle
     area = triangle_area(triangle)
@@ -235,17 +242,23 @@ def show_triangle_info(virtual_sensor, triangle):
     inference = round(virtual_sensor.calculate_measurement(physical_sensors=triangle), 1)
     mse = round(mean_squared_error([virtual_sensor.measurement], [inference]), 2)
 
-    print(f'        Triangle = {sorted([sensor.id for sensor in triangle], key=lambda i: i)}')
-    print(f'            Aux. Sensor 1: {auxiliary_sensors[0].inferred_measurement} (dist={dist_auxsensor1_virtual_sensor})')
-    print(f'            Aux. Sensor 2: {auxiliary_sensors[1].inferred_measurement} (dist={dist_auxsensor2_virtual_sensor})')
-    print(f'            Aux. Sensor 3: {auxiliary_sensors[2].inferred_measurement} (dist={dist_auxsensor3_virtual_sensor})')
-    print(f'            Average Distance from Virtual Sensor: {distance_from_virtual_sensor}')
-    print(f'            Triangle Area: {area}')
-    print(f'            Inference: {inference} (MSE={mse})')
+    print(f"        Triangle = {sorted([sensor.id for sensor in triangle], key=lambda i: i)}")
+    print(
+        f"            Aux. Sensor 1: {auxiliary_sensors[0].inferred_measurement} (dist={dist_auxsensor1_virtual_sensor})"
+    )
+    print(
+        f"            Aux. Sensor 2: {auxiliary_sensors[1].inferred_measurement} (dist={dist_auxsensor2_virtual_sensor})"
+    )
+    print(
+        f"            Aux. Sensor 3: {auxiliary_sensors[2].inferred_measurement} (dist={dist_auxsensor3_virtual_sensor})"
+    )
+    print(f"            Average Distance from Virtual Sensor: {distance_from_virtual_sensor}")
+    print(f"            Triangle Area: {area}")
+    print(f"            Inference: {inference} (MSE={mse})")
 
 
-def create_edges_and_draw_topo(triangles, figname='topology.jpg'):
-    """ Creates the edges of all triangle in 'triangles' and output the NetworkX topology to a figure.
+def create_edges_and_draw_topo(triangles, figname="topology.jpg"):
+    """Creates the edges of all triangle in 'triangles' and output the NetworkX topology to a figure.
 
     Parameters
     ==========

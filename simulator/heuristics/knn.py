@@ -3,7 +3,7 @@ from simulator.simulation_environment import SimulationEnvironment
 
 
 def knn():
-    """ Adapted version of the k-Nearest Neighbors (kNN) algorithm that calculates the
+    """Adapted version of the k-Nearest Neighbors (kNN) algorithm that calculates the
     value of a unknown points based on the arithmetic mean of the k nearest spatial neighbors.
     This algorithm is widely used to imputate missing data points [1, 2].
 
@@ -18,14 +18,16 @@ def knn():
     NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY = SimulationEnvironment.first().neighbors
 
     # Adding the number of neighbors (given by the 'k' parameter) to the heuristic's name to ease post-simulation analysis
-    SimulationEnvironment.first().heuristic = f'k-Nearest Neighbors (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})'
+    SimulationEnvironment.first().heuristic = f"k-Nearest Neighbors (k={NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY})"
 
     # Gathering the list of virtual sensors whose measurements need to be inferred
     virtual_sensors = SimulationEnvironment.first().virtual_sensors
 
     # Inferring the values of the virtual sensors using the kNN algorithm
     for virtual_sensor in virtual_sensors:
-        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY]
+        neighbor_sensors = virtual_sensor.find_neighbors_sorted_by_distance()[
+            0:NEIGHBORS_TO_ESTIMATE_MEASUREMENT_DIRECTLY
+        ]
         neighbors_measurements = [neighbor.measurement for neighbor in neighbor_sensors]
 
         # Calculating the sensor value through the arithmetic mean of its k nearest spatial neighbors
