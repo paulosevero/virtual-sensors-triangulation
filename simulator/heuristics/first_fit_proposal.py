@@ -26,11 +26,7 @@ def first_fit_proposal():
             if triangles:
                 triangle = triangles[0]
 
-                inference = virtual_sensor.calculate_measurement(
-                    physical_sensors=triangle,
-                    use_auxiliary_sensors=True,
-                    weighted=False,
-                )
+                inference = virtual_sensor.calculate_measurement(physical_sensors=triangle, use_auxiliary_sensors=True)
                 virtual_sensor.inferred_measurement = inference
 
                 break

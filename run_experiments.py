@@ -35,12 +35,13 @@ def run_simulation(dataset, metric, steps, virtual_sensors, k, heuristic_name):
 def main():
     random.seed(1)
     np.random.seed(1)
+    np.random.default_rng(1)
 
     # General (fixed) experiment parameters
     dataset = "inmet_2020_south"
     metrics = [
-        "PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)",
         "RADIACAO GLOBAL (Kj/m²)",
+        "PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)",
         "TEMPERATURA DO PONTO DE ORVALHO (°C)",
     ]
 

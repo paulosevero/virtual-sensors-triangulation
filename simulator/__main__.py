@@ -15,6 +15,7 @@ UMIDADE RELATIVA DO AR, HORARIA (%)
 # Python Libraries
 import random
 import argparse
+import numpy as np
 
 # General-purpose Simulator Modules
 from simulator.simulator import Simulator
@@ -72,6 +73,8 @@ def main(
 if __name__ == "__main__":
     # Defining a seed value to enable reproducibility in case any stochastic behavior occurs during simulation
     random.seed(1)
+    np.random.seed(1)
+    np.random.default_rng(1)
 
     # Parsing named arguments from the command line
     parser = argparse.ArgumentParser()

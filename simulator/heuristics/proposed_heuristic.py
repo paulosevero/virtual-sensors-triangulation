@@ -40,7 +40,5 @@ def proposed_heuristic():
             triangle = sorted(triangles, key=lambda t: triangle_weight(virtual_sensor, t))[0]
 
             # Estimating the value of the virtual sensor
-            inference = virtual_sensor.calculate_measurement(
-                physical_sensors=triangle, use_auxiliary_sensors=True, weighted=True
-            )
+            inference = virtual_sensor.calculate_measurement(physical_sensors=triangle, use_auxiliary_sensors=True)
             virtual_sensor.inferred_measurement = inference
