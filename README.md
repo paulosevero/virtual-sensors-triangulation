@@ -20,6 +20,7 @@ sudo apt install libgeos-dev libproj-dev proj-data proj-bin libbz2-dev libblas3 
 
 pip3 install poetry
 pip3 install black
+pip3 install pylint
 ```
 
 From now on, we can use Poetry to automatically install any other dependency our project needs automatically inside a virtual environment. To do so, enter inside our project's directory (e.g.: `cd [path-to-project]`) and type the following commands:
