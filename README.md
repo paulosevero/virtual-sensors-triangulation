@@ -40,7 +40,7 @@ To execute a single experiment, we can run the following command:
 python3 -B -m simulator -d [dataset_file] -m [metric_of_interest] -s [timespan] -n [n_sensors] -k [n_neighbors] -a [technique]
 ```
 
-Conversely, you can run all experiments with the same experiments used in the paper with the following command (that will output a CSV file with the results of our proposal, the simple triangulation method, and the sensitivity analysis of kNN and IDW):
+Conversely, you can run all experiments with the same parameters used in the paper with the following command (that will output a CSV file with the results of our proposal, the simple triangulation method, and the sensitivity analysis of kNN and IDW):
 
 ```bash
 python3 -B run_experiments.py
